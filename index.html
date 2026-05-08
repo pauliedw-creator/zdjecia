@@ -443,7 +443,15 @@ async function syncQueue() {
   const remaining = [];
   for (const item of q) {
     try {
-      await callBackend('submitSlab', item);
+      const res = await callGet('submitSlabMeta', item.slabMeta);
+      if (res.ok) {
+        // Fire off photos
+        for (const photo of (item.photoArr || [])) {
+          postNoCors('uploadPhoto', { slab_id: item.slabMeta.slab_id, photo });
+        }
+      } else {
+        remaining.push(item);
+      }
     } catch {
       remaining.push(item);
     }
@@ -468,18 +476,43 @@ function applyPrefs() {
   if (p.thickness) document.getElementById('thickness').value = p.thickness;
 }
 
-// ── Backend calls ────────────────────────────────────────────────────────────
-async function callBackend(action, data = {}) {
-  if (action === 'getNextId' || action === 'getMaterials' || action === 'getSlabsNoPhoto') {
-    const res = await fetch(`${BACKEND_URL}?action=${action}`, { method: 'GET' });
-    return res.json();
-  }
-  const res = await fetch(`${BACKEND_URL}?action=${action}`, {
-    method: 'POST',
-    body: JSON.stringify({ action, ...data }),
-    headers: { 'Content-Type': 'text/plain' } // Apps Script requires text/plain for POST
+// ── Backend calls ─────────────────────────────────────────────────────────────
+// GET operations use JSONP to bypass Apps Script CORS redirect issue.
+// POST operations (photo uploads) use no-cors — fire and forget.
+
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'glg_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      cleanup(); reject(new Error('Timeout'));
+    }, 15000);
+    function cleanup() { clearTimeout(timer); delete window[cbName]; if (script.parentNode) script.parentNode.removeChild(script); }
+    window[cbName] = (data) => { cleanup(); resolve(data); };
+    script.onerror = () => { cleanup(); reject(new Error('Script error')); };
+    script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+    document.head.appendChild(script);
   });
-  return res.json();
+}
+
+function postNoCors(action, data) {
+  // Fire and forget — browser sends it, we can't read the response
+  return fetch(BACKEND_URL + '?action=' + action, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ action, ...data }),
+    headers: { 'Content-Type': 'text/plain' }
+  }).catch(() => {}); // swallow errors silently
+}
+
+async function callGet(action, params = {}) {
+  let url = BACKEND_URL + '?action=' + action;
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null && v !== '') {
+      url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(v);
+    }
+  }
+  return jsonp(url);
 }
 
 // ── Photo compression ─────────────────────────────────────────────────────────
@@ -550,7 +583,7 @@ async function loadNextId() {
   const statusEl = document.getElementById('idStatus');
   const idEl = document.getElementById('nextId');
   try {
-    const res = await callBackend('getNextId');
+    const res = await callGet('getNextId');
     if (res.ok) {
       nextId = res.id;
       idEl.textContent = res.id;
@@ -565,7 +598,7 @@ async function loadNextId() {
 
 async function loadMaterials() {
   try {
-    const res = await callBackend('getMaterials');
+    const res = await callGet('getMaterials');
     if (res.ok) materials = res.materials;
   } catch {}
 }
@@ -698,45 +731,49 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     thickness: document.getElementById('thickness').value
   });
 
-  const photoArr = Object.entries(photos)
-    .filter(([, v]) => v !== null)
-    .map(([, v]) => v);
-
-  const payload = {
-    slab: {
-      slab_id: nextId,
-      material_name_pl: document.getElementById('materialPl').value.trim(),
-      material_name_en: document.getElementById('matEn')?.value.trim() || document.getElementById('materialPl').value.trim(),
-      stone_type: document.getElementById('stoneType').value,
-      colour: document.getElementById('colour').value,
-      length_cm: document.getElementById('length').value,
-      width_cm: document.getElementById('width').value,
-      thickness_cm: document.getElementById('thickness').value,
-      finish: document.getElementById('finish').value,
-      edge_condition: document.getElementById('edge').value,
-      origin_country: document.getElementById('origin').value,
-      notes_pl: document.getElementById('notes').value.trim(),
-      notes_en: ''
-    },
-    photos: photoArr
+  const slabMeta = {
+    slab_id:          nextId,
+    material_name_pl: document.getElementById('materialPl').value.trim(),
+    material_name_en: document.getElementById('materialEn').value.trim() || document.getElementById('materialPl').value.trim(),
+    stone_type:       document.getElementById('stoneType').value,
+    colour:           document.getElementById('colour').value,
+    length_cm:        document.getElementById('length').value,
+    width_cm:         document.getElementById('width').value,
+    thickness_cm:     document.getElementById('thickness').value,
+    finish:           document.getElementById('finish').value,
+    edge_condition:   document.getElementById('edge').value,
+    origin_country:   document.getElementById('origin').value,
+    notes_pl:         document.getElementById('notes').value.trim()
   };
 
-  fill.style.width = '40%';
-  label.textContent = 'Wysyłanie…';
+  const photoArr = Object.values(photos).filter(Boolean);
+
+  fill.style.width = '30%';
+  label.textContent = 'Zapisywanie…';
 
   try {
     if (isOnline) {
-      const res = await callBackend('submitSlab', payload);
+      // Step 1: submit metadata via JSONP (confirmed)
+      const res = await callGet('submitSlabMeta', slabMeta);
+      fill.style.width = '60%';
+
+      if (!res.ok) throw new Error(res.error || 'Błąd zapisu');
+
+      // Step 2: upload each photo via no-cors POST (fire and forget)
+      label.textContent = 'Wysyłanie zdjęć…';
+      for (const photo of photoArr) {
+        postNoCors('uploadPhoto', { slab_id: nextId, photo });
+      }
+
       fill.style.width = '100%';
-      if (res.ok) {
-        showToast(`✓ Płyta ${nextId} zapisana`, 'success');
-        resetForm();
-        await loadNextId();
-      } else throw new Error(res.error);
+      showToast(`✓ Płyta ${nextId} zapisana`, 'success');
+      resetForm();
+      await loadNextId();
     } else {
-      enqueue(payload);
+      // Offline — queue the whole payload
+      enqueue({ slabMeta, photoArr });
       fill.style.width = '100%';
-      showToast(`📥 Zapisano offline — wyśle gdy wróci sieć`, 'success');
+      showToast('📥 Zapisano offline — wyśle gdy wróci sieć', 'success');
       resetForm();
       await loadNextId();
     }
@@ -770,7 +807,7 @@ async function loadAttachPage() {
   const list = document.getElementById('attachList');
   list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Ładowanie…</div>';
   try {
-    const res = await callBackend('getSlabsNoPhoto');
+    const res = await callGet('getSlabsNoPhoto');
     if (!res.ok) throw new Error(res.error);
     if (!res.slabs.length) {
       list.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>Wszystkie płyty mają zdjęcia!</div>';
@@ -815,10 +852,8 @@ async function loadAttachPage() {
         btn.textContent = 'Wysyłanie…';
         let sent = 0;
         for (const [name, data] of Object.entries(pendingPhotos)) {
-          try {
-            await callBackend('attachPhoto', { slab_id: s.id, photo: { ...data, name } });
-            sent++;
-          } catch {}
+          postNoCors('attachPhoto', { slab_id: s.id, photo: { ...data, name } });
+          sent++;
         }
         showToast(`✓ Wysłano ${sent} zdjęć dla ${s.id}`, 'success');
         document.getElementById('attach-' + s.id).style.opacity = '0.5';
