@@ -1,0 +1,14 @@
+{
+  "name": "GLG Rejestracja Płyt",
+  "short_name": "GLG Zdjęcia",
+  "description": "Rejestracja płyt granitowych Golden Leaf Granit",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1c20",
+  "theme_color": "#1a1c20",
+  "icons": [
+    { "src": "/assets/glg-logo-leaf-200.png", "sizes": "200x200", "type": "image/png" },
+    { "src": "/assets/glg-logo-leaf.png", "sizes": "816x493", "type": "image/png", "purpose": "any" }
+  ]
+}
