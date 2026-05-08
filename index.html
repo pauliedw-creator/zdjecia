@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#1a1c20" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="GLG Zdjęcia" />
+  <title>GLG Zdjęcia</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/assets/glg-logo-leaf-200.png" />
+  <style>
+    /* ── tokens ── */
+    :root {
+      --gold: #C5A050;
+      --gold-soft: #d4b76a;
+      --bg: #1a1c20;
+      --bg-2: #22252c;
+      --bg-3: #2a2e38;
+      --border: #3a3f4e;
+      --text: #ECECF1;
+      --text-muted: #9aa0b4;
+      --text-faint: #6b7290;
+      --green: #4caf7d;
+      --red: #e05252;
+      --amber: #d4a017;
+      --r: 10px;
+      --r-lg: 16px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px; -webkit-font-smoothing: antialiased; }
+    button { font: inherit; cursor: pointer; border: none; }
+    input, select, textarea { font: inherit; color: var(--text); background: var(--bg-3);
+      border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px;
+      width: 100%; outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+    select option { background: var(--bg-3); }
+
+    /* ── layout ── */
+    #app { display: flex; flex-direction: column; height: 100%; max-width: 480px; margin: 0 auto; }
+
+    /* ── header ── */
+    .app-header {
+      background: var(--bg-2); border-bottom: 1px solid var(--border);
+      padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .app-header img { height: 32px; width: auto; }
+    .app-header__title { font-size: 1rem; font-weight: 600; color: var(--gold); letter-spacing: 0.05em; }
+    .app-header__sub { font-size: 0.75rem; color: var(--text-muted); }
+    .app-header__offline {
+      margin-left: auto; font-size: 0.7rem; padding: 3px 8px;
+      border-radius: 20px; background: var(--amber); color: #1a1a1a;
+      font-weight: 600; display: none;
+    }
+    .app-header__offline.show { display: block; }
+
+    /* ── tabs ── */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+    .tab {
+      flex: 1; padding: 14px 8px; text-align: center; font-size: 0.9rem;
+      font-weight: 500; color: var(--text-muted); background: none;
+      border-bottom: 2px solid transparent; transition: all 0.15s;
+    }
+    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+    /* ── content ── */
+    .page { flex: 1; overflow-y: auto; padding: 20px 16px 40px; display: none; }
+    .page.active { display: block; }
+
+    /* ── form elements ── */
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 0.8rem; color: var(--text-muted);
+      font-weight: 500; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    /* autocomplete */
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+      background: var(--bg-3); border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 var(--r) var(--r); max-height: 180px; overflow-y: auto;
+      display: none;
+    }
+    .autocomplete-list.open { display: block; }
+    .autocomplete-item { padding: 10px 14px; cursor: pointer; font-size: 0.9rem; }
+    .autocomplete-item:hover, .autocomplete-item.focused { background: var(--bg-2); color: var(--gold); }
+
+    /* ── shot capture area ── */
+    .shots-section { margin: 20px 0; }
+    .shots-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 12px; font-weight: 500; }
+    .shots-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .shot-slot {
+      border: 2px dashed var(--border); border-radius: var(--r-lg);
+      aspect-ratio: 4/3; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 6px;
+      cursor: pointer; position: relative; overflow: hidden;
+      background: var(--bg-3); transition: border-color 0.15s;
+    }
+    .shot-slot.required { border-color: var(--amber); }
+    .shot-slot.captured { border-color: var(--green); border-style: solid; }
+    .shot-slot.captured .shot-placeholder { display: none; }
+    .shot-slot img.preview {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; display: none;
+    }
+    .shot-slot.captured img.preview { display: block; }
+    .shot-placeholder { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .shot-icon { font-size: 1.8rem; }
+    .shot-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; }
+    .shot-req { font-size: 0.65rem; color: var(--amber); }
+    .shot-remove {
+      position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
+      background: rgba(0,0,0,0.6); border-radius: 50%; color: #fff;
+      font-size: 0.75rem; display: none; align-items: center; justify-content: center;
+      z-index: 2;
+    }
+    .shot-slot.captured .shot-remove { display: flex; }
+    input[type="file"] { display: none; }
+
+    /* ── next slab id display ── */
+    .slab-id-display {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r);
+      padding: 14px 16px; margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .slab-id-display__label { font-size: 0.75rem; color: var(--text-muted); }
+    .slab-id-display__id { font-family: 'SF Mono', 'Menlo', monospace; font-size: 1.1rem;
+      color: var(--gold); font-weight: 600; letter-spacing: 0.05em; }
+    .slab-id-display__status { font-size: 0.75rem; color: var(--text-faint); }
+
+    /* ── buttons ── */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 14px 20px; border-radius: var(--r); font-weight: 600;
+      font-size: 0.95rem; width: 100%; transition: opacity 0.15s;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--gold); color: #1a1a1a; }
+    .btn-primary:active:not(:disabled) { opacity: 0.8; }
+    .btn-secondary { background: var(--bg-3); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-sm { padding: 8px 14px; font-size: 0.85rem; width: auto; }
+
+    /* ── progress / feedback ── */
+    .progress-bar {
+      height: 4px; background: var(--bg-3); border-radius: 2px;
+      overflow: hidden; margin: 12px 0;
+    }
+    .progress-bar__fill { height: 100%; background: var(--gold);
+      width: 0%; transition: width 0.3s ease; border-radius: 2px; }
+
+    .toast {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r);
+      padding: 12px 20px; font-size: 0.9rem; z-index: 100;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4); white-space: nowrap;
+      opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .toast.success { border-color: var(--green); color: var(--green); }
+    .toast.error { border-color: var(--red); color: var(--red); }
+
+    /* ── queue indicator ── */
+    .queue-banner {
+      background: var(--amber); color: #1a1a1a; padding: 10px 16px;
+      font-size: 0.85rem; font-weight: 600; text-align: center;
+      display: none; cursor: pointer;
+    }
+    .queue-banner.show { display: block; }
+
+    /* ── bulk attach ── */
+    .slab-attach-item {
+      background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r);
+      padding: 14px 16px; margin-bottom: 12px;
+    }
+    .slab-attach-item__id { font-family: monospace; font-size: 0.85rem; color: var(--text-faint); }
+    .slab-attach-item__mat { font-size: 1rem; font-weight: 600; color: var(--text); margin: 2px 0 12px; }
+    .attach-drop {
+      border: 2px dashed var(--border); border-radius: var(--r);
+      padding: 20px; text-align: center; font-size: 0.85rem;
+      color: var(--text-muted); cursor: pointer; transition: border-color 0.15s;
+    }
+    .attach-drop.over { border-color: var(--gold); color: var(--gold); }
+    .attach-photos { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .attach-thumb {
+      width: 64px; height: 64px; border-radius: 6px; object-fit: cover;
+      border: 2px solid var(--green);
+    }
+    .attach-submit { margin-top: 10px; }
+
+    /* ── empty state ── */
+    .empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+
+    /* ── section divider ── */
+    .section-title { font-size: 0.75rem; color: var(--text-faint); text-transform: uppercase;
+      letter-spacing: 0.08em; font-weight: 500; margin: 24px 0 12px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header class="app-header">
+    <img src="/assets/glg-logo-leaf-200.png" alt="GLG" />
+    <div>
+      <div class="app-header__title">GOLDEN LEAF GRANIT</div>
+      <div class="app-header__sub">Rejestracja płyt</div>
+    </div>
+    <div class="app-header__offline" id="offlineBadge">OFFLINE</div>
+  </header>
+
+  <div class="queue-banner" id="queueBanner">
+    📤 <span id="queueCount">0</span> oczekuje na wysłanie — dotknij aby wysłać
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="new">➕ Nowa płyta</button>
+    <button class="tab" data-tab="attach">📎 Dodaj zdjęcia</button>
+  </div>
+
+  <!-- ═══ PAGE: NEW SLAB ═══════════════════════════════════════════════════ -->
+  <div class="page active" id="page-new">
+    <div class="slab-id-display">
+      <div>
+        <div class="slab-id-display__label">Numer płyty</div>
+        <div class="slab-id-display__id" id="nextId">Ładowanie…</div>
+      </div>
+      <div class="slab-id-display__status" id="idStatus">pobieranie…</div>
+    </div>
+
+    <!-- Material -->
+    <div class="field">
+      <label>Materiał *</label>
+      <div class="autocomplete-wrap">
+        <input type="text" id="materialPl" placeholder="np. Vanga Red" autocomplete="off" />
+        <input type="hidden" id="materialEn" />
+        <div class="autocomplete-list" id="autocompleteList"></div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Rodzaj kamienia</label>
+        <select id="stoneType">
+          <option value="granit">Granit</option>
+          <option value="kwarcyt">Kwarcyt</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Kolor</label>
+        <select id="colour">
+          <option value="">— wybierz —</option>
+          <option value="czarny">Czarny</option>
+          <option value="biały">Biały</option>
+          <option value="szary">Szary</option>
+          <option value="czerwony">Czerwony</option>
+          <option value="brązowy">Brązowy</option>
+          <option value="beżowy">Beżowy</option>
+          <option value="zielony">Zielony</option>
+          <option value="niebieski">Niebieski</option>
+          <option value="złoty">Złoty</option>
+          <option value="wielobarwny">Wielobarwny</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-title">Wymiary (cm)</div>
+    <div class="field-row-3">
+      <div class="field">
+        <label>Długość</label>
+        <input type="number" id="length" placeholder="280" inputmode="decimal" />
+      </div>
+      <div class="field">
+        <label>Szerokość</label>
+        <input type="number" id="width" placeholder="180" inputmode="decimal" />
+      </div>
+      <div class="field">
+        <label>Grubość</label>
+        <input type="number" id="thickness" placeholder="3" inputmode="decimal" />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Wykończenie</label>
+        <select id="finish">
+          <option value="polerowany">Polerowany</option>
+          <option value="szczotkowany">Szczotkowany</option>
+          <option value="płomieniowany">Płomieniowany</option>
+          <option value="piaskowany">Piaskowany</option>
+          <option value="surowy">Surowy</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Krawędź</label>
+        <select id="edge">
+          <option value="cięty">Cięty</option>
+          <option value="naturalny">Naturalny</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Pochodzenie</label>
+      <select id="origin">
+        <option value="Indie">Indie</option>
+        <option value="Chiny">Chiny</option>
+        <option value="Brazylia">Brazylia</option>
+        <option value="RPA">RPA</option>
+        <option value="Norwegia">Norwegia</option>
+        <option value="Włochy">Włochy</option>
+        <option value="Hiszpania">Hiszpania</option>
+        <option value="Inne">Inne</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Uwagi (opcjonalnie)</label>
+      <textarea id="notes" rows="2" placeholder="np. wyjątkowe użylenie, para dostępna…"></textarea>
+    </div>
+
+    <!-- Photos -->
+    <div class="shots-section">
+      <div class="shots-title">Zdjęcia</div>
+      <div class="shots-grid">
+        <div class="shot-slot required" id="slot-full" data-type="full">
+          <div class="shot-placeholder">
+            <div class="shot-icon">📸</div>
+            <div class="shot-label">Pełna płyta</div>
+            <div class="shot-req">wymagane</div>
+          </div>
+          <img class="preview" />
+          <button class="shot-remove" aria-label="Usuń">✕</button>
+          <input type="file" accept="image/*" capture="environment" />
+        </div>
+        <div class="shot-slot" id="slot-detail" data-type="detail">
+          <div class="shot-placeholder">
+            <div class="shot-icon">🔍</div>
+            <div class="shot-label">Detal</div>
+          </div>
+          <img class="preview" />
+          <button class="shot-remove" aria-label="Usuń">✕</button>
+          <input type="file" accept="image/*" capture="environment" />
+        </div>
+        <div class="shot-slot" id="slot-edge" data-type="edge">
+          <div class="shot-placeholder">
+            <div class="shot-icon">📐</div>
+            <div class="shot-label">Krawędź</div>
+          </div>
+          <img class="preview" />
+          <button class="shot-remove" aria-label="Usuń">✕</button>
+          <input type="file" accept="image/*" capture="environment" />
+        </div>
+        <div class="shot-slot" id="slot-wet" data-type="wet">
+          <div class="shot-placeholder">
+            <div class="shot-icon">💧</div>
+            <div class="shot-label">Mokra</div>
+          </div>
+          <img class="preview" />
+          <button class="shot-remove" aria-label="Usuń">✕</button>
+          <input type="file" accept="image/*" capture="environment" />
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-bar" id="submitProgress" style="display:none">
+      <div class="progress-bar__fill" id="submitProgressFill"></div>
+    </div>
+
+    <button class="btn btn-primary" id="submitBtn" disabled>
+      <span id="submitLabel">Wypełnij wymagane pola</span>
+    </button>
+  </div>
+
+  <!-- ═══ PAGE: BULK ATTACH ════════════════════════════════════════════════ -->
+  <div class="page" id="page-attach">
+    <div id="attachList">
+      <div class="empty">
+        <div class="empty-icon">⏳</div>
+        Ładowanie płyt bez zdjęć…
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// Replace this with your deployed Apps Script web app URL
+const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbycZ0SnpaXkzoU8OJjIzi-q8b8WxzBYDkgvVjfx693KGTLAeABcjXpBzebJaRi9WNRd/exec';
+
+// Max photo size in bytes before compression (800KB)
+const MAX_PHOTO_BYTES = 800 * 1024;
+const COMPRESS_MAX_DIM = 2000; // px on longest side
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── State ────────────────────────────────────────────────────────────────────
+let nextId = null;
+let materials = [];
+let photos = { full: null, detail: null, edge: null, wet: null };
+let isOnline = navigator.onLine;
+const QUEUE_KEY = 'glg_capture_queue';
+const PREFS_KEY = 'glg_capture_prefs';
+
+// ── Offline handling ─────────────────────────────────────────────────────────
+window.addEventListener('online',  () => { isOnline = true;  updateOnlineUI(); syncQueue(); });
+window.addEventListener('offline', () => { isOnline = false; updateOnlineUI(); });
+
+function updateOnlineUI() {
+  document.getElementById('offlineBadge').classList.toggle('show', !isOnline);
+}
+updateOnlineUI();
+
+// ── Queue ────────────────────────────────────────────────────────────────────
+function getQueue() {
+  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; }
+}
+function saveQueue(q) {
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+  const count = q.length;
+  const banner = document.getElementById('queueBanner');
+  banner.classList.toggle('show', count > 0);
+  document.getElementById('queueCount').textContent = count;
+}
+function enqueue(payload) {
+  const q = getQueue();
+  q.push({ ...payload, queued_at: Date.now() });
+  saveQueue(q);
+}
+
+async function syncQueue() {
+  const q = getQueue();
+  if (!q.length || !isOnline) return;
+  const remaining = [];
+  for (const item of q) {
+    try {
+      await callBackend('submitSlab', item);
+    } catch {
+      remaining.push(item);
+    }
+  }
+  saveQueue(remaining);
+  if (remaining.length < q.length) showToast(`Wysłano ${q.length - remaining.length} z kolejki`, 'success');
+}
+
+document.getElementById('queueBanner').addEventListener('click', syncQueue);
+
+// ── Prefs (last-used defaults) ───────────────────────────────────────────────
+function getPrefs() {
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); } catch { return {}; }
+}
+function savePrefs(p) { localStorage.setItem(PREFS_KEY, JSON.stringify(p)); }
+function applyPrefs() {
+  const p = getPrefs();
+  if (p.stoneType) document.getElementById('stoneType').value = p.stoneType;
+  if (p.finish) document.getElementById('finish').value = p.finish;
+  if (p.edge) document.getElementById('edge').value = p.edge;
+  if (p.origin) document.getElementById('origin').value = p.origin;
+  if (p.thickness) document.getElementById('thickness').value = p.thickness;
+}
+
+// ── Backend calls ────────────────────────────────────────────────────────────
+async function callBackend(action, data = {}) {
+  if (action === 'getNextId' || action === 'getMaterials' || action === 'getSlabsNoPhoto') {
+    const res = await fetch(`${BACKEND_URL}?action=${action}`, { method: 'GET' });
+    return res.json();
+  }
+  const res = await fetch(`${BACKEND_URL}?action=${action}`, {
+    method: 'POST',
+    body: JSON.stringify({ action, ...data }),
+    headers: { 'Content-Type': 'text/plain' } // Apps Script requires text/plain for POST
+  });
+  return res.json();
+}
+
+// ── Photo compression ─────────────────────────────────────────────────────────
+async function compressPhoto(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      const max = COMPRESS_MAX_DIM;
+      if (width > max || height > max) {
+        if (width > height) { height = Math.round(height * max / width); width = max; }
+        else { width = Math.round(width * max / height); height = max; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      let quality = 0.82;
+      const tryExport = () => {
+        canvas.toBlob(blob => {
+          if (blob.size > MAX_PHOTO_BYTES && quality > 0.4) {
+            quality -= 0.1; tryExport();
+          } else {
+            const reader = new FileReader();
+            reader.onload = e => resolve({
+              base64: e.target.result.split(',')[1],
+              mimeType: 'image/jpeg',
+              size: blob.size
+            });
+            reader.readAsDataURL(blob);
+          }
+        }, 'image/jpeg', quality);
+      };
+      tryExport();
+    };
+    img.src = url;
+  });
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve({ base64: e.target.result.split(',')[1], mimeType: file.type });
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('page-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'attach') loadAttachPage();
+  });
+});
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+async function init() {
+  applyPrefs();
+  syncQueue();
+  await Promise.all([loadNextId(), loadMaterials()]);
+}
+
+async function loadNextId() {
+  const statusEl = document.getElementById('idStatus');
+  const idEl = document.getElementById('nextId');
+  try {
+    const res = await callBackend('getNextId');
+    if (res.ok) {
+      nextId = res.id;
+      idEl.textContent = res.id;
+      statusEl.textContent = 'gotowy';
+    } else throw new Error(res.error);
+  } catch (e) {
+    idEl.textContent = 'Błąd';
+    statusEl.textContent = 'brak połączenia';
+    showToast('Nie można pobrać ID: ' + e.message, 'error');
+  }
+}
+
+async function loadMaterials() {
+  try {
+    const res = await callBackend('getMaterials');
+    if (res.ok) materials = res.materials;
+  } catch {}
+}
+
+// ── Autocomplete ──────────────────────────────────────────────────────────────
+const matInput = document.getElementById('materialPl');
+const matEn = document.getElementById('materialEn');
+const acList = document.getElementById('autocompleteList');
+let acFocusIdx = -1;
+
+matInput.addEventListener('input', () => {
+  const q = matInput.value.toLowerCase();
+  const matches = materials.filter(m => m.pl.toLowerCase().includes(q));
+  renderAC(matches);
+});
+
+matInput.addEventListener('keydown', e => {
+  const items = acList.querySelectorAll('.autocomplete-item');
+  if (e.key === 'ArrowDown') { acFocusIdx = Math.min(acFocusIdx + 1, items.length - 1); highlightAC(items); e.preventDefault(); }
+  if (e.key === 'ArrowUp') { acFocusIdx = Math.max(acFocusIdx - 1, 0); highlightAC(items); e.preventDefault(); }
+  if (e.key === 'Enter' && acFocusIdx >= 0) { items[acFocusIdx].click(); e.preventDefault(); }
+  if (e.key === 'Escape') closeAC();
+});
+
+matInput.addEventListener('focus', () => {
+  if (materials.length) renderAC(materials.slice(0, 6));
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) closeAC();
+});
+
+function renderAC(matches) {
+  if (!matches.length) { closeAC(); return; }
+  acList.innerHTML = matches.slice(0, 8).map((m, i) =>
+    `<div class="autocomplete-item" data-pl="${m.pl}" data-en="${m.en}">${m.pl}${m.en && m.en !== m.pl ? ' <span style="color:var(--text-faint)">/ ' + m.en + '</span>' : ''}</div>`
+  ).join('');
+  acList.querySelectorAll('.autocomplete-item').forEach(item => {
+    item.addEventListener('click', () => {
+      matInput.value = item.dataset.pl;
+      matEn.value = item.dataset.en;
+      closeAC();
+      checkSubmit();
+    });
+  });
+  acFocusIdx = -1;
+  acList.classList.add('open');
+}
+
+function highlightAC(items) {
+  items.forEach((el, i) => el.classList.toggle('focused', i === acFocusIdx));
+}
+function closeAC() { acList.classList.remove('open'); }
+
+// ── Shot slots ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.shot-slot').forEach(slot => {
+  const type = slot.dataset.type;
+  const fileInput = slot.querySelector('input[type="file"]');
+  const preview = slot.querySelector('img.preview');
+  const removeBtn = slot.querySelector('.shot-remove');
+
+  // Tap to capture
+  slot.addEventListener('click', e => {
+    if (e.target === removeBtn || removeBtn.contains(e.target)) return;
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    // Show preview immediately
+    preview.src = URL.createObjectURL(file);
+    slot.classList.add('captured');
+    // Compress and store
+    const compressed = await compressPhoto(file);
+    photos[type] = { ...compressed, name: type + '.jpg' };
+    checkSubmit();
+  });
+
+  removeBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    preview.src = '';
+    slot.classList.remove('captured');
+    fileInput.value = '';
+    photos[type] = null;
+    checkSubmit();
+  });
+});
+
+// ── Validation + submit button ────────────────────────────────────────────────
+function checkSubmit() {
+  const hasMaterial = document.getElementById('materialPl').value.trim().length > 0;
+  const hasLength = document.getElementById('length').value > 0;
+  const hasWidth = document.getElementById('width').value > 0;
+  const hasThickness = document.getElementById('thickness').value > 0;
+  const hasFull = !!photos.full;
+
+  const btn = document.getElementById('submitBtn');
+  const label = document.getElementById('submitLabel');
+
+  if (!hasMaterial) { label.textContent = 'Wpisz nazwę materiału'; btn.disabled = true; return; }
+  if (!hasLength || !hasWidth || !hasThickness) { label.textContent = 'Uzupełnij wymiary'; btn.disabled = true; return; }
+  if (!hasFull) { label.textContent = 'Wymagane zdjęcie pełnej płyty'; btn.disabled = true; return; }
+
+  label.textContent = 'Zapisz płytę';
+  btn.disabled = false;
+}
+
+['materialPl','length','width','thickness'].forEach(id => {
+  document.getElementById(id).addEventListener('input', checkSubmit);
+});
+
+// ── Submit ─────────────────────────────────────────────────────────────────
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('submitBtn');
+  const label = document.getElementById('submitLabel');
+  const progress = document.getElementById('submitProgress');
+  const fill = document.getElementById('submitProgressFill');
+
+  btn.disabled = true;
+  progress.style.display = 'block';
+  fill.style.width = '10%';
+
+  // Save prefs
+  savePrefs({
+    stoneType: document.getElementById('stoneType').value,
+    finish: document.getElementById('finish').value,
+    edge: document.getElementById('edge').value,
+    origin: document.getElementById('origin').value,
+    thickness: document.getElementById('thickness').value
+  });
+
+  const photoArr = Object.entries(photos)
+    .filter(([, v]) => v !== null)
+    .map(([, v]) => v);
+
+  const payload = {
+    slab: {
+      slab_id: nextId,
+      material_name_pl: document.getElementById('materialPl').value.trim(),
+      material_name_en: document.getElementById('matEn')?.value.trim() || document.getElementById('materialPl').value.trim(),
+      stone_type: document.getElementById('stoneType').value,
+      colour: document.getElementById('colour').value,
+      length_cm: document.getElementById('length').value,
+      width_cm: document.getElementById('width').value,
+      thickness_cm: document.getElementById('thickness').value,
+      finish: document.getElementById('finish').value,
+      edge_condition: document.getElementById('edge').value,
+      origin_country: document.getElementById('origin').value,
+      notes_pl: document.getElementById('notes').value.trim(),
+      notes_en: ''
+    },
+    photos: photoArr
+  };
+
+  fill.style.width = '40%';
+  label.textContent = 'Wysyłanie…';
+
+  try {
+    if (isOnline) {
+      const res = await callBackend('submitSlab', payload);
+      fill.style.width = '100%';
+      if (res.ok) {
+        showToast(`✓ Płyta ${nextId} zapisana`, 'success');
+        resetForm();
+        await loadNextId();
+      } else throw new Error(res.error);
+    } else {
+      enqueue(payload);
+      fill.style.width = '100%';
+      showToast(`📥 Zapisano offline — wyśle gdy wróci sieć`, 'success');
+      resetForm();
+      await loadNextId();
+    }
+  } catch (err) {
+    showToast('Błąd: ' + err.message, 'error');
+    btn.disabled = false;
+    label.textContent = 'Spróbuj ponownie';
+  }
+
+  setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 800);
+});
+
+function resetForm() {
+  document.getElementById('materialPl').value = '';
+  document.getElementById('materialEn').value = '';
+  document.getElementById('length').value = '';
+  document.getElementById('width').value = '';
+  document.getElementById('notes').value = '';
+  // Reset shots
+  document.querySelectorAll('.shot-slot').forEach(slot => {
+    slot.classList.remove('captured');
+    slot.querySelector('img.preview').src = '';
+    slot.querySelector('input[type="file"]').value = '';
+  });
+  photos = { full: null, detail: null, edge: null, wet: null };
+  checkSubmit();
+}
+
+// ── Attach page ────────────────────────────────────────────────────────────
+async function loadAttachPage() {
+  const list = document.getElementById('attachList');
+  list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Ładowanie…</div>';
+  try {
+    const res = await callBackend('getSlabsNoPhoto');
+    if (!res.ok) throw new Error(res.error);
+    if (!res.slabs.length) {
+      list.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>Wszystkie płyty mają zdjęcia!</div>';
+      return;
+    }
+    list.innerHTML = res.slabs.map(s => `
+      <div class="slab-attach-item" id="attach-${s.id}">
+        <div class="slab-attach-item__id">${s.id}</div>
+        <div class="slab-attach-item__mat">${s.material || '—'}</div>
+        <div class="attach-photos" id="thumbs-${s.id}"></div>
+        <div class="attach-drop" id="drop-${s.id}" data-id="${s.id}">
+          📁 Dotknij lub przeciągnij zdjęcia tutaj
+        </div>
+        <input type="file" accept="image/*" multiple id="files-${s.id}" data-id="${s.id}" style="display:none" />
+        <div class="attach-submit">
+          <button class="btn btn-secondary btn-sm" id="attachBtn-${s.id}" data-id="${s.id}" disabled>Wyślij zdjęcia</button>
+        </div>
+      </div>
+    `).join('');
+
+    // Wire up each attach item
+    res.slabs.forEach(s => {
+      const drop = document.getElementById('drop-' + s.id);
+      const fileInput = document.getElementById('files-' + s.id);
+      const btn = document.getElementById('attachBtn-' + s.id);
+
+      const pendingPhotos = {};
+
+      drop.addEventListener('click', () => fileInput.click());
+      drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+      drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+      drop.addEventListener('drop', e => {
+        e.preventDefault(); drop.classList.remove('over');
+        handleAttachFiles(Array.from(e.dataTransfer.files), s.id, pendingPhotos, btn);
+      });
+      fileInput.addEventListener('change', () => {
+        handleAttachFiles(Array.from(fileInput.files), s.id, pendingPhotos, btn);
+      });
+
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        btn.textContent = 'Wysyłanie…';
+        let sent = 0;
+        for (const [name, data] of Object.entries(pendingPhotos)) {
+          try {
+            await callBackend('attachPhoto', { slab_id: s.id, photo: { ...data, name } });
+            sent++;
+          } catch {}
+        }
+        showToast(`✓ Wysłano ${sent} zdjęć dla ${s.id}`, 'success');
+        document.getElementById('attach-' + s.id).style.opacity = '0.5';
+        btn.textContent = 'Wysłano';
+      });
+    });
+
+  } catch (err) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+async function handleAttachFiles(files, slabId, pending, btn) {
+  const thumbs = document.getElementById('thumbs-' + slabId);
+  for (const file of files) {
+    const name = guessPhotoType(file.name, pending) + '.jpg';
+    const compressed = await compressPhoto(file);
+    pending[name] = compressed;
+    // Thumbnail
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    img.className = 'attach-thumb';
+    img.title = name;
+    thumbs.appendChild(img);
+  }
+  btn.disabled = false;
+  btn.textContent = `Wyślij ${Object.keys(pending).length} zdjęć`;
+}
+
+function guessPhotoType(filename, existing) {
+  const lower = filename.toLowerCase();
+  const types = ['full', 'detail', 'edge', 'wet'];
+  for (const t of types) {
+    if (lower.includes(t) && !existing[t + '.jpg']) return t;
+  }
+  // No keyword match — assign next available type
+  for (const t of types) {
+    if (!existing[t + '.jpg']) return t;
+  }
+  return 'extra-' + Date.now();
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
