@@ -123,6 +123,13 @@
       z-index: 2;
     }
     .shot-slot.captured .shot-remove { display: flex; }
+    .shot-btns { display: flex; gap: 8px; margin-top: 6px; }
+    .shot-btn-camera, .shot-btn-gallery {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 6px 10px; font-size: 1.1rem;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    .shot-btn-camera:hover, .shot-btn-gallery:hover { border-color: var(--gold); }
     input[type="file"] { display: none; }
 
     /* ── next slab id display ── */
@@ -335,37 +342,57 @@
             <div class="shot-icon">📸</div>
             <div class="shot-label">Pełna płyta</div>
             <div class="shot-req">wymagane</div>
+            <div class="shot-btns">
+              <button type="button" class="shot-btn-camera" title="Zrób zdjęcie">📷</button>
+              <button type="button" class="shot-btn-gallery" title="Wybierz z galerii">🖼️</button>
+            </div>
           </div>
           <img class="preview" />
           <button class="shot-remove" aria-label="Usuń">✕</button>
-          <input type="file" accept="image/*" capture="environment" />
+          <input type="file" accept="image/*" capture="environment" class="input-camera" />
+          <input type="file" accept="image/*" class="input-gallery" />
         </div>
         <div class="shot-slot" id="slot-detail" data-type="detail">
           <div class="shot-placeholder">
             <div class="shot-icon">🔍</div>
             <div class="shot-label">Detal</div>
+            <div class="shot-btns">
+              <button type="button" class="shot-btn-camera" title="Zrób zdjęcie">📷</button>
+              <button type="button" class="shot-btn-gallery" title="Wybierz z galerii">🖼️</button>
+            </div>
           </div>
           <img class="preview" />
           <button class="shot-remove" aria-label="Usuń">✕</button>
-          <input type="file" accept="image/*" capture="environment" />
+          <input type="file" accept="image/*" capture="environment" class="input-camera" />
+          <input type="file" accept="image/*" class="input-gallery" />
         </div>
         <div class="shot-slot" id="slot-edge" data-type="edge">
           <div class="shot-placeholder">
             <div class="shot-icon">📐</div>
             <div class="shot-label">Krawędź</div>
+            <div class="shot-btns">
+              <button type="button" class="shot-btn-camera" title="Zrób zdjęcie">📷</button>
+              <button type="button" class="shot-btn-gallery" title="Wybierz z galerii">🖼️</button>
+            </div>
           </div>
           <img class="preview" />
           <button class="shot-remove" aria-label="Usuń">✕</button>
-          <input type="file" accept="image/*" capture="environment" />
+          <input type="file" accept="image/*" capture="environment" class="input-camera" />
+          <input type="file" accept="image/*" class="input-gallery" />
         </div>
         <div class="shot-slot" id="slot-wet" data-type="wet">
           <div class="shot-placeholder">
             <div class="shot-icon">💧</div>
             <div class="shot-label">Mokra</div>
+            <div class="shot-btns">
+              <button type="button" class="shot-btn-camera" title="Zrób zdjęcie">📷</button>
+              <button type="button" class="shot-btn-gallery" title="Wybierz z galerii">🖼️</button>
+            </div>
           </div>
           <img class="preview" />
           <button class="shot-remove" aria-label="Usuń">✕</button>
-          <input type="file" accept="image/*" capture="environment" />
+          <input type="file" accept="image/*" capture="environment" class="input-camera" />
+          <input type="file" accept="image/*" class="input-gallery" />
         </div>
       </div>
     </div>
@@ -396,7 +423,7 @@
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 // Replace this with your deployed Apps Script web app URL
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzdG5i5bKPgtxHlCJkbMBUUq8LBlpnC46fwqoHQcLSN_UodxxjpyN7CwKeUmESskxr1/exec';
+const BACKEND_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL';
 
 // Max photo size in bytes before compression (800KB)
 const MAX_PHOTO_BYTES = 800 * 1024;
@@ -655,34 +682,46 @@ function closeAC() { acList.classList.remove('open'); }
 
 // ── Shot slots ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.shot-slot').forEach(slot => {
-  const type = slot.dataset.type;
-  const fileInput = slot.querySelector('input[type="file"]');
-  const preview = slot.querySelector('img.preview');
-  const removeBtn = slot.querySelector('.shot-remove');
+  const type        = slot.dataset.type;
+  const cameraInput = slot.querySelector('.input-camera');
+  const galleryInput= slot.querySelector('.input-gallery');
+  const cameraBtn   = slot.querySelector('.shot-btn-camera');
+  const galleryBtn  = slot.querySelector('.shot-btn-gallery');
+  const preview     = slot.querySelector('img.preview');
+  const removeBtn   = slot.querySelector('.shot-remove');
 
-  // Tap to capture
+  // Camera button → open camera
+  cameraBtn.addEventListener('click', e => { e.stopPropagation(); cameraInput.click(); });
+
+  // Gallery button → open file picker
+  galleryBtn.addEventListener('click', e => { e.stopPropagation(); galleryInput.click(); });
+
+  // Tapping the slot itself (outside buttons) → camera by default
   slot.addEventListener('click', e => {
     if (e.target === removeBtn || removeBtn.contains(e.target)) return;
-    fileInput.click();
+    if (e.target === cameraBtn || e.target === galleryBtn) return;
+    if (slot.classList.contains('captured')) return;
+    cameraInput.click();
   });
 
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files[0];
+  async function handleFile(file) {
     if (!file) return;
-    // Show preview immediately
     preview.src = URL.createObjectURL(file);
     slot.classList.add('captured');
-    // Compress and store
     const compressed = await compressPhoto(file);
     photos[type] = { ...compressed, name: type + '.jpg' };
     checkSubmit();
-  });
+  }
+
+  cameraInput.addEventListener('change',  () => handleFile(cameraInput.files[0]));
+  galleryInput.addEventListener('change', () => handleFile(galleryInput.files[0]));
 
   removeBtn.addEventListener('click', e => {
     e.stopPropagation();
     preview.src = '';
     slot.classList.remove('captured');
-    fileInput.value = '';
+    cameraInput.value = '';
+    galleryInput.value = '';
     photos[type] = null;
     checkSubmit();
   });
@@ -796,7 +835,10 @@ function resetForm() {
   document.querySelectorAll('.shot-slot').forEach(slot => {
     slot.classList.remove('captured');
     slot.querySelector('img.preview').src = '';
-    slot.querySelector('input[type="file"]').value = '';
+    const ci = slot.querySelector('.input-camera');
+    const gi = slot.querySelector('.input-gallery');
+    if (ci) ci.value = '';
+    if (gi) gi.value = '';
   });
   photos = { full: null, detail: null, edge: null, wet: null };
   checkSubmit();
