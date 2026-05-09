@@ -123,14 +123,6 @@
       z-index: 2;
     }
     .shot-slot.captured .shot-remove { display: flex; }
-    .shot-wrap { display: flex; flex-direction: column; gap: 6px; }
-    .btn-gallery-pick {
-      background: var(--bg-2); border: 1px solid var(--border);
-      border-radius: var(--r); padding: 8px; font-size: 0.8rem;
-      color: var(--text-muted); cursor: pointer; text-align: center;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    .btn-gallery-pick:hover { border-color: var(--gold); color: var(--gold); }
     input[type="file"] { display: none; }
 
     /* ── next slab id display ── */
@@ -204,7 +196,34 @@
     }
     .attach-submit { margin-top: 10px; }
 
-    /* ── empty state ── */
+    /* ── photo source modal ── */
+    .photo-modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 200; display: none; align-items: flex-end;
+    }
+    .photo-modal-backdrop.open { display: flex; }
+    .photo-modal {
+      background: var(--bg-2); border-radius: var(--r-lg) var(--r-lg) 0 0;
+      padding: 20px 16px 32px; width: 100%; display: flex; flex-direction: column; gap: 10px;
+    }
+    .photo-modal__title {
+      font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.08em; font-weight: 500; text-align: center; margin-bottom: 4px;
+    }
+    .photo-modal__btn {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r);
+      padding: 16px; display: flex; align-items: center; gap: 14px;
+      font-size: 1rem; color: var(--text); cursor: pointer; transition: border-color 0.15s;
+    }
+    .photo-modal__btn:hover, .photo-modal__btn:active { border-color: var(--gold); }
+    .photo-modal__btn-icon { font-size: 1.6rem; width: 36px; text-align: center; }
+    .photo-modal__btn-text { display: flex; flex-direction: column; gap: 2px; }
+    .photo-modal__btn-label { font-weight: 600; }
+    .photo-modal__btn-sub { font-size: 0.8rem; color: var(--text-muted); }
+    .photo-modal__cancel {
+      background: none; border: none; color: var(--text-muted);
+      padding: 12px; font-size: 0.95rem; cursor: pointer; text-align: center;
+    }
     .empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
     .empty-icon { font-size: 3rem; margin-bottom: 12px; }
 
@@ -336,60 +355,48 @@
 
     <!-- Photos -->
     <div class="shots-section">
-      <div class="shots-title">Zdjęcia</div>
+      <div class="shots-title">Zdjęcia — dotknij aby dodać</div>
       <div class="shots-grid">
-        <div class="shot-wrap">
-          <div class="shot-slot required" id="slot-full" data-type="full">
-            <div class="shot-placeholder">
-              <div class="shot-icon">📸</div>
-              <div class="shot-label">Pełna płyta</div>
-              <div class="shot-req">wymagane</div>
-            </div>
-            <img class="preview" />
-            <button class="shot-remove" aria-label="Usuń">✕</button>
-            <input type="file" accept="image/*" capture="environment" class="input-camera" />
-            <input type="file" accept="image/jpeg,image/png,image/webp" class="input-gallery" />
+        <div class="shot-slot required" id="slot-full" data-type="full">
+          <div class="shot-placeholder">
+            <div class="shot-icon">📸</div>
+            <div class="shot-label">Pełna płyta</div>
+            <div class="shot-req">wymagane</div>
           </div>
-          <button type="button" class="btn-gallery-pick" data-for="slot-full">🖼️ Galeria</button>
+          <img class="preview" />
+          <button class="shot-remove" aria-label="Usuń">✕</button>
+          <input type="file" accept="image/*" capture="environment" class="input-camera" />
+          <input type="file" accept="image/jpeg,image/png,image/webp" class="input-gallery" />
         </div>
-        <div class="shot-wrap">
-          <div class="shot-slot" id="slot-detail" data-type="detail">
-            <div class="shot-placeholder">
-              <div class="shot-icon">🔍</div>
-              <div class="shot-label">Detal</div>
-            </div>
-            <img class="preview" />
-            <button class="shot-remove" aria-label="Usuń">✕</button>
-            <input type="file" accept="image/*" capture="environment" class="input-camera" />
-            <input type="file" accept="image/jpeg,image/png,image/webp" class="input-gallery" />
+        <div class="shot-slot" id="slot-detail" data-type="detail">
+          <div class="shot-placeholder">
+            <div class="shot-icon">🔍</div>
+            <div class="shot-label">Detal</div>
           </div>
-          <button type="button" class="btn-gallery-pick" data-for="slot-detail">🖼️ Galeria</button>
+          <img class="preview" />
+          <button class="shot-remove" aria-label="Usuń">✕</button>
+          <input type="file" accept="image/*" capture="environment" class="input-camera" />
+          <input type="file" accept="image/jpeg,image/png,image/webp" class="input-gallery" />
         </div>
-        <div class="shot-wrap">
-          <div class="shot-slot" id="slot-edge" data-type="edge">
-            <div class="shot-placeholder">
-              <div class="shot-icon">📐</div>
-              <div class="shot-label">Krawędź</div>
-            </div>
-            <img class="preview" />
-            <button class="shot-remove" aria-label="Usuń">✕</button>
-            <input type="file" accept="image/*" capture="environment" class="input-camera" />
-            <input type="file" accept="image/jpeg,image/png,image/webp" class="input-gallery" />
+        <div class="shot-slot" id="slot-edge" data-type="edge">
+          <div class="shot-placeholder">
+            <div class="shot-icon">📐</div>
+            <div class="shot-label">Krawędź</div>
           </div>
-          <button type="button" class="btn-gallery-pick" data-for="slot-edge">🖼️ Galeria</button>
+          <img class="preview" />
+          <button class="shot-remove" aria-label="Usuń">✕</button>
+          <input type="file" accept="image/*" capture="environment" class="input-camera" />
+          <input type="file" accept="image/jpeg,image/png,image/webp" class="input-gallery" />
         </div>
-        <div class="shot-wrap">
-          <div class="shot-slot" id="slot-wet" data-type="wet">
-            <div class="shot-placeholder">
-              <div class="shot-icon">💧</div>
-              <div class="shot-label">Mokra</div>
-            </div>
-            <img class="preview" />
-            <button class="shot-remove" aria-label="Usuń">✕</button>
-            <input type="file" accept="image/*" capture="environment" class="input-camera" />
-            <input type="file" accept="image/jpeg,image/png,image/webp" class="input-gallery" />
+        <div class="shot-slot" id="slot-wet" data-type="wet">
+          <div class="shot-placeholder">
+            <div class="shot-icon">💧</div>
+            <div class="shot-label">Mokra</div>
           </div>
-          <button type="button" class="btn-gallery-pick" data-for="slot-wet">🖼️ Galeria</button>
+          <img class="preview" />
+          <button class="shot-remove" aria-label="Usuń">✕</button>
+          <input type="file" accept="image/*" capture="environment" class="input-camera" />
+          <input type="file" accept="image/jpeg,image/png,image/webp" class="input-gallery" />
         </div>
       </div>
     </div>
@@ -410,6 +417,28 @@
         <div class="empty-icon">⏳</div>
         Ładowanie płyt bez zdjęć…
       </div>
+    </div>
+  </div>
+
+  <!-- ═══ PHOTO SOURCE MODAL ══════════════════════════════════════════════ -->
+  <div class="photo-modal-backdrop" id="photoModal">
+    <div class="photo-modal">
+      <div class="photo-modal__title" id="photoModalTitle">Dodaj zdjęcie</div>
+      <button class="photo-modal__btn" id="modalCamera">
+        <span class="photo-modal__btn-icon">📷</span>
+        <span class="photo-modal__btn-text">
+          <span class="photo-modal__btn-label">Zrób zdjęcie</span>
+          <span class="photo-modal__btn-sub">Otwórz aparat</span>
+        </span>
+      </button>
+      <button class="photo-modal__btn" id="modalGallery">
+        <span class="photo-modal__btn-icon">🗂️</span>
+        <span class="photo-modal__btn-text">
+          <span class="photo-modal__btn-label">Wybierz z galerii</span>
+          <span class="photo-modal__btn-sub">Zdjęcia z urządzenia</span>
+        </span>
+      </button>
+      <button class="photo-modal__cancel" id="modalCancel">Anuluj</button>
     </div>
   </div>
 
@@ -678,6 +707,46 @@ function highlightAC(items) {
 function closeAC() { acList.classList.remove('open'); }
 
 // ── Shot slots ────────────────────────────────────────────────────────────────
+// ── Photo source modal ───────────────────────────────────────────────────────
+const photoModal    = document.getElementById('photoModal');
+const modalCamera   = document.getElementById('modalCamera');
+const modalGallery  = document.getElementById('modalGallery');
+const modalCancel   = document.getElementById('modalCancel');
+const modalTitle    = document.getElementById('photoModalTitle');
+
+let modalCameraInput  = null;
+let modalGalleryInput = null;
+
+function openPhotoModal(title, cameraInput, galleryInput) {
+  modalTitle.textContent = title;
+  modalCameraInput  = cameraInput;
+  modalGalleryInput = galleryInput;
+  photoModal.classList.add('open');
+}
+
+function closePhotoModal() {
+  photoModal.classList.remove('open');
+  modalCameraInput  = null;
+  modalGalleryInput = null;
+}
+
+modalCamera.addEventListener('click', () => {
+  closePhotoModal();
+  if (modalCameraInput) setTimeout(() => modalCameraInput.click(), 50);
+});
+
+modalGallery.addEventListener('click', () => {
+  closePhotoModal();
+  if (modalGalleryInput) setTimeout(() => modalGalleryInput.click(), 50);
+});
+
+modalCancel.addEventListener('click', closePhotoModal);
+
+photoModal.addEventListener('click', e => {
+  if (e.target === photoModal) closePhotoModal();
+});
+
+// ── Shot slots ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.shot-slot').forEach(slot => {
   const type        = slot.dataset.type;
   const cameraInput = slot.querySelector('.input-camera');
@@ -685,11 +754,13 @@ document.querySelectorAll('.shot-slot').forEach(slot => {
   const preview     = slot.querySelector('img.preview');
   const removeBtn   = slot.querySelector('.shot-remove');
 
-  // Tap slot → camera
+  const labels = { full: 'Pełna płyta', detail: 'Detal', edge: 'Krawędź', wet: 'Mokra' };
+
+  // Tap slot → open modal
   slot.addEventListener('click', e => {
     if (e.target === removeBtn || removeBtn.contains(e.target)) return;
     if (slot.classList.contains('captured')) return;
-    cameraInput.click();
+    openPhotoModal(labels[type] || 'Zdjęcie', cameraInput, galleryInput);
   });
 
   async function handleFile(file) {
@@ -712,14 +783,6 @@ document.querySelectorAll('.shot-slot').forEach(slot => {
     galleryInput.value = '';
     photos[type] = null;
     checkSubmit();
-  });
-});
-
-// Gallery pick buttons (outside the slot, one per shot type)
-document.querySelectorAll('.btn-gallery-pick').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const slot = document.getElementById(btn.dataset.for);
-    slot.querySelector('.input-gallery').click();
   });
 });
 
@@ -860,9 +923,10 @@ async function loadAttachPage() {
         <div class="slab-attach-item__mat">${s.material || '—'}</div>
         <div class="attach-photos" id="thumbs-${s.id}"></div>
         <div class="attach-drop" id="drop-${s.id}" data-id="${s.id}">
-          📁 Dotknij lub przeciągnij zdjęcia tutaj
+          📷 Dotknij aby dodać zdjęcie
         </div>
-        <input type="file" accept="image/*" multiple id="files-${s.id}" data-id="${s.id}" style="display:none" />
+        <input type="file" accept="image/*" capture="environment" id="camera-${s.id}" style="display:none" />
+        <input type="file" accept="image/jpeg,image/png,image/webp" multiple id="files-${s.id}" data-id="${s.id}" style="display:none" />
         <div class="attach-submit">
           <button class="btn btn-secondary btn-sm" id="attachBtn-${s.id}" data-id="${s.id}" disabled>Wyślij zdjęcia</button>
         </div>
@@ -871,18 +935,27 @@ async function loadAttachPage() {
 
     // Wire up each attach item
     res.slabs.forEach(s => {
-      const drop = document.getElementById('drop-' + s.id);
-      const fileInput = document.getElementById('files-' + s.id);
-      const btn = document.getElementById('attachBtn-' + s.id);
+      const drop        = document.getElementById('drop-' + s.id);
+      const cameraInput = document.getElementById('camera-' + s.id);
+      const fileInput   = document.getElementById('files-' + s.id);
+      const btn         = document.getElementById('attachBtn-' + s.id);
 
       const pendingPhotos = {};
 
-      drop.addEventListener('click', () => fileInput.click());
+      // Tap drop zone → open modal
+      drop.addEventListener('click', () => {
+        openPhotoModal(s.material || s.id, cameraInput, fileInput);
+      });
+
       drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
       drop.addEventListener('dragleave', () => drop.classList.remove('over'));
       drop.addEventListener('drop', e => {
         e.preventDefault(); drop.classList.remove('over');
         handleAttachFiles(Array.from(e.dataTransfer.files), s.id, pendingPhotos, btn);
+      });
+
+      cameraInput.addEventListener('change', () => {
+        handleAttachFiles(Array.from(cameraInput.files), s.id, pendingPhotos, btn);
       });
       fileInput.addEventListener('change', () => {
         handleAttachFiles(Array.from(fileInput.files), s.id, pendingPhotos, btn);
