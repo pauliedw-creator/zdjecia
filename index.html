@@ -731,13 +731,15 @@ function closePhotoModal() {
 }
 
 modalCamera.addEventListener('click', () => {
+  const input = modalCameraInput;
+  if (input) input.click(); // trigger first, while still in gesture context
   closePhotoModal();
-  if (modalCameraInput) setTimeout(() => modalCameraInput.click(), 50);
 });
 
 modalGallery.addEventListener('click', () => {
+  const input = modalGalleryInput;
+  if (input) input.click(); // trigger first, while still in gesture context
   closePhotoModal();
-  if (modalGalleryInput) setTimeout(() => modalGalleryInput.click(), 50);
 });
 
 modalCancel.addEventListener('click', closePhotoModal);
