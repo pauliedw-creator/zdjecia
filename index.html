@@ -348,7 +348,7 @@
             <img class="preview" />
             <button class="shot-remove" aria-label="Usuń">✕</button>
             <input type="file" accept="image/*" capture="environment" class="input-camera" />
-            <input type="file" accept="image/*" class="input-gallery" />
+            <input type="file" accept=".jpg,.jpeg,.png,.webp,.heic" class="input-gallery" />
           </div>
           <button type="button" class="btn-gallery-pick" data-for="slot-full">🖼️ Galeria</button>
         </div>
@@ -361,7 +361,7 @@
             <img class="preview" />
             <button class="shot-remove" aria-label="Usuń">✕</button>
             <input type="file" accept="image/*" capture="environment" class="input-camera" />
-            <input type="file" accept="image/*" class="input-gallery" />
+            <input type="file" accept=".jpg,.jpeg,.png,.webp,.heic" class="input-gallery" />
           </div>
           <button type="button" class="btn-gallery-pick" data-for="slot-detail">🖼️ Galeria</button>
         </div>
@@ -374,7 +374,7 @@
             <img class="preview" />
             <button class="shot-remove" aria-label="Usuń">✕</button>
             <input type="file" accept="image/*" capture="environment" class="input-camera" />
-            <input type="file" accept="image/*" class="input-gallery" />
+            <input type="file" accept=".jpg,.jpeg,.png,.webp,.heic" class="input-gallery" />
           </div>
           <button type="button" class="btn-gallery-pick" data-for="slot-edge">🖼️ Galeria</button>
         </div>
@@ -387,7 +387,7 @@
             <img class="preview" />
             <button class="shot-remove" aria-label="Usuń">✕</button>
             <input type="file" accept="image/*" capture="environment" class="input-camera" />
-            <input type="file" accept="image/*" class="input-gallery" />
+            <input type="file" accept=".jpg,.jpeg,.png,.webp,.heic" class="input-gallery" />
           </div>
           <button type="button" class="btn-gallery-pick" data-for="slot-wet">🖼️ Galeria</button>
         </div>
@@ -422,8 +422,8 @@
 // Replace this with your deployed Apps Script web app URL
 const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzdG5i5bKPgtxHlCJkbMBUUq8LBlpnC46fwqoHQcLSN_UodxxjpyN7CwKeUmESskxr1/exec';
 
-// Max photo size in bytes before compression (800KB)
-const MAX_PHOTO_BYTES = 800 * 1024;
+// Max photo size in bytes before compression (2MB — enough quality, manageable upload)
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
 const COMPRESS_MAX_DIM = 2000; // px on longest side
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -794,10 +794,13 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
       if (!res.ok) throw new Error(res.error || 'Błąd zapisu');
 
-      // Step 2: upload each photo via no-cors POST (fire and forget)
+      // Step 2: upload photos sequentially with a gap between each.
+      // Fire-and-forget (no-cors) but serialised so Apps Script never
+      // receives two simultaneous requests trying to create the same folder.
       label.textContent = 'Wysyłanie zdjęć…';
       for (const photo of photoArr) {
         postNoCors('uploadPhoto', { slab_id: nextId, photo });
+        await new Promise(r => setTimeout(r, 800)); // 800ms gap between uploads
       }
 
       fill.style.width = '100%';
