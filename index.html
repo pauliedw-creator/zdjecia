@@ -420,6 +420,10 @@
     </div>
   </div>
 
+  <!-- Shared inputs for attach tab — document-level so modal click triggers work reliably -->
+  <input type="file" accept="image/*" capture="environment" id="attachCameraInput" style="display:none" />
+  <input type="file" accept="image/jpeg,image/png,image/webp" multiple id="attachGalleryInput" style="display:none" />
+
   <!-- ═══ PHOTO SOURCE MODAL ══════════════════════════════════════════════ -->
   <div class="photo-modal-backdrop" id="photoModal">
     <div class="photo-modal">
@@ -451,9 +455,8 @@
 // Replace this with your deployed Apps Script web app URL
 const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzdG5i5bKPgtxHlCJkbMBUUq8LBlpnC46fwqoHQcLSN_UodxxjpyN7CwKeUmESskxr1/exec';
 
-// Max photo size in bytes before compression (2MB — enough quality, manageable upload)
-const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
-const COMPRESS_MAX_DIM = 2000; // px on longest side
+// Max dimension (px on longest side) — quality is fixed at 0.88, no byte-target loop
+const COMPRESS_MAX_DIM = 2000;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── State ────────────────────────────────────────────────────────────────────
@@ -584,33 +587,18 @@ async function compressPhoto(file) {
       const canvas = document.createElement('canvas');
       canvas.width = width; canvas.height = height;
       canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      let quality = 0.82;
-      const tryExport = () => {
-        canvas.toBlob(blob => {
-          if (blob.size > MAX_PHOTO_BYTES && quality > 0.4) {
-            quality -= 0.1; tryExport();
-          } else {
-            const reader = new FileReader();
-            reader.onload = e => resolve({
-              base64: e.target.result.split(',')[1],
-              mimeType: 'image/jpeg',
-              size: blob.size
-            });
-            reader.readAsDataURL(blob);
-          }
-        }, 'image/jpeg', quality);
-      };
-      tryExport();
+      // Fixed quality 0.88 — no degradation loop, consistent output
+      canvas.toBlob(blob => {
+        const reader = new FileReader();
+        reader.onload = e => resolve({
+          base64: e.target.result.split(',')[1],
+          mimeType: 'image/jpeg',
+          size: blob.size
+        });
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg', 0.88);
     };
     img.src = url;
-  });
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = e => resolve({ base64: e.target.result.split(',')[1], mimeType: file.type });
-    reader.readAsDataURL(file);
   });
 }
 
@@ -909,6 +897,24 @@ function resetForm() {
 }
 
 // ── Attach page ────────────────────────────────────────────────────────────
+// Shared inputs at document level — more reliable modal trigger on Android
+const attachCameraInput  = document.getElementById('attachCameraInput');
+const attachGalleryInput = document.getElementById('attachGalleryInput');
+let activeAttachSlabId   = null;
+let activeAttachPending  = {};
+let activeAttachBtn      = null;
+
+attachCameraInput.addEventListener('change', () => {
+  if (!activeAttachSlabId) return;
+  handleAttachFiles(Array.from(attachCameraInput.files), activeAttachSlabId, activeAttachPending, activeAttachBtn);
+  attachCameraInput.value = '';
+});
+attachGalleryInput.addEventListener('change', () => {
+  if (!activeAttachSlabId) return;
+  handleAttachFiles(Array.from(attachGalleryInput.files), activeAttachSlabId, activeAttachPending, activeAttachBtn);
+  attachGalleryInput.value = '';
+});
+
 async function loadAttachPage() {
   const list = document.getElementById('attachList');
   list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Ładowanie…</div>';
@@ -927,50 +933,43 @@ async function loadAttachPage() {
         <div class="attach-drop" id="drop-${s.id}" data-id="${s.id}">
           📷 Dotknij aby dodać zdjęcie
         </div>
-        <input type="file" accept="image/*" capture="environment" id="camera-${s.id}" style="display:none" />
-        <input type="file" accept="image/jpeg,image/png,image/webp" multiple id="files-${s.id}" data-id="${s.id}" style="display:none" />
         <div class="attach-submit">
           <button class="btn btn-secondary btn-sm" id="attachBtn-${s.id}" data-id="${s.id}" disabled>Wyślij zdjęcia</button>
         </div>
       </div>
     `).join('');
 
-    // Wire up each attach item
     res.slabs.forEach(s => {
-      const drop        = document.getElementById('drop-' + s.id);
-      const cameraInput = document.getElementById('camera-' + s.id);
-      const fileInput   = document.getElementById('files-' + s.id);
-      const btn         = document.getElementById('attachBtn-' + s.id);
+      const drop    = document.getElementById('drop-' + s.id);
+      const btn     = document.getElementById('attachBtn-' + s.id);
+      const pending = {};
 
-      const pendingPhotos = {};
-
-      // Tap drop zone → open modal
+      // Track which slab is active so the shared inputs know where to send
       drop.addEventListener('click', () => {
-        openPhotoModal(s.material || s.id, cameraInput, fileInput);
+        activeAttachSlabId = s.id;
+        activeAttachPending = pending;
+        activeAttachBtn = btn;
+        openPhotoModal(s.material || s.id, attachCameraInput, attachGalleryInput);
       });
 
       drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
       drop.addEventListener('dragleave', () => drop.classList.remove('over'));
       drop.addEventListener('drop', e => {
         e.preventDefault(); drop.classList.remove('over');
-        handleAttachFiles(Array.from(e.dataTransfer.files), s.id, pendingPhotos, btn);
-      });
-
-      cameraInput.addEventListener('change', () => {
-        handleAttachFiles(Array.from(cameraInput.files), s.id, pendingPhotos, btn);
-      });
-      fileInput.addEventListener('change', () => {
-        handleAttachFiles(Array.from(fileInput.files), s.id, pendingPhotos, btn);
+        handleAttachFiles(Array.from(e.dataTransfer.files), s.id, pending, btn);
       });
 
       btn.addEventListener('click', async () => {
         btn.disabled = true;
         btn.textContent = 'Wysyłanie…';
         let sent = 0;
-        for (const [name, data] of Object.entries(pendingPhotos)) {
+        for (const [name, data] of Object.entries(pending)) {
           postNoCors('attachPhoto', { slab_id: s.id, photo: { ...data, name } });
+          await new Promise(r => setTimeout(r, 800)); // serialise to avoid duplicate folders
           sent++;
         }
+        // Trigger catalogue build so photo appears without waiting for cron
+        await callGet('triggerBuild').catch(() => {});
         showToast(`✓ Wysłano ${sent} zdjęć dla ${s.id}`, 'success');
         document.getElementById('attach-' + s.id).style.opacity = '0.5';
         btn.textContent = 'Wysłano';
