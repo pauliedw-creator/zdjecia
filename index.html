@@ -123,13 +123,14 @@
       z-index: 2;
     }
     .shot-slot.captured .shot-remove { display: flex; }
-    .shot-btns { display: flex; gap: 8px; margin-top: 6px; }
-    .shot-btn-camera, .shot-btn-gallery {
+    .shot-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .btn-gallery-pick {
       background: var(--bg-2); border: 1px solid var(--border);
-      border-radius: var(--r); padding: 6px 10px; font-size: 1.1rem;
-      cursor: pointer; transition: border-color 0.15s;
+      border-radius: var(--r); padding: 8px; font-size: 0.8rem;
+      color: var(--text-muted); cursor: pointer; text-align: center;
+      transition: border-color 0.15s, color 0.15s;
     }
-    .shot-btn-camera:hover, .shot-btn-gallery:hover { border-color: var(--gold); }
+    .btn-gallery-pick:hover { border-color: var(--gold); color: var(--gold); }
     input[type="file"] { display: none; }
 
     /* ── next slab id display ── */
@@ -337,42 +338,58 @@
     <div class="shots-section">
       <div class="shots-title">Zdjęcia</div>
       <div class="shots-grid">
-        <div class="shot-slot required" id="slot-full" data-type="full">
-          <div class="shot-placeholder">
-            <div class="shot-icon">📸</div>
-            <div class="shot-label">Pełna płyta</div>
-            <div class="shot-req">wymagane</div>
+        <div class="shot-wrap">
+          <div class="shot-slot required" id="slot-full" data-type="full">
+            <div class="shot-placeholder">
+              <div class="shot-icon">📸</div>
+              <div class="shot-label">Pełna płyta</div>
+              <div class="shot-req">wymagane</div>
+            </div>
+            <img class="preview" />
+            <button class="shot-remove" aria-label="Usuń">✕</button>
+            <input type="file" accept="image/*" capture="environment" class="input-camera" />
+            <input type="file" accept="image/*" class="input-gallery" />
           </div>
-          <img class="preview" />
-          <button class="shot-remove" aria-label="Usuń">✕</button>
-          <input type="file" accept="image/*" />
+          <button type="button" class="btn-gallery-pick" data-for="slot-full">🖼️ Galeria</button>
         </div>
-        <div class="shot-slot" id="slot-detail" data-type="detail">
-          <div class="shot-placeholder">
-            <div class="shot-icon">🔍</div>
-            <div class="shot-label">Detal</div>
+        <div class="shot-wrap">
+          <div class="shot-slot" id="slot-detail" data-type="detail">
+            <div class="shot-placeholder">
+              <div class="shot-icon">🔍</div>
+              <div class="shot-label">Detal</div>
+            </div>
+            <img class="preview" />
+            <button class="shot-remove" aria-label="Usuń">✕</button>
+            <input type="file" accept="image/*" capture="environment" class="input-camera" />
+            <input type="file" accept="image/*" class="input-gallery" />
           </div>
-          <img class="preview" />
-          <button class="shot-remove" aria-label="Usuń">✕</button>
-          <input type="file" accept="image/*" />
+          <button type="button" class="btn-gallery-pick" data-for="slot-detail">🖼️ Galeria</button>
         </div>
-        <div class="shot-slot" id="slot-edge" data-type="edge">
-          <div class="shot-placeholder">
-            <div class="shot-icon">📐</div>
-            <div class="shot-label">Krawędź</div>
+        <div class="shot-wrap">
+          <div class="shot-slot" id="slot-edge" data-type="edge">
+            <div class="shot-placeholder">
+              <div class="shot-icon">📐</div>
+              <div class="shot-label">Krawędź</div>
+            </div>
+            <img class="preview" />
+            <button class="shot-remove" aria-label="Usuń">✕</button>
+            <input type="file" accept="image/*" capture="environment" class="input-camera" />
+            <input type="file" accept="image/*" class="input-gallery" />
           </div>
-          <img class="preview" />
-          <button class="shot-remove" aria-label="Usuń">✕</button>
-          <input type="file" accept="image/*" />
+          <button type="button" class="btn-gallery-pick" data-for="slot-edge">🖼️ Galeria</button>
         </div>
-        <div class="shot-slot" id="slot-wet" data-type="wet">
-          <div class="shot-placeholder">
-            <div class="shot-icon">💧</div>
-            <div class="shot-label">Mokra</div>
+        <div class="shot-wrap">
+          <div class="shot-slot" id="slot-wet" data-type="wet">
+            <div class="shot-placeholder">
+              <div class="shot-icon">💧</div>
+              <div class="shot-label">Mokra</div>
+            </div>
+            <img class="preview" />
+            <button class="shot-remove" aria-label="Usuń">✕</button>
+            <input type="file" accept="image/*" capture="environment" class="input-camera" />
+            <input type="file" accept="image/*" class="input-gallery" />
           </div>
-          <img class="preview" />
-          <button class="shot-remove" aria-label="Usuń">✕</button>
-          <input type="file" accept="image/*" />
+          <button type="button" class="btn-gallery-pick" data-for="slot-wet">🖼️ Galeria</button>
         </div>
       </div>
     </div>
@@ -662,34 +679,47 @@ function closeAC() { acList.classList.remove('open'); }
 
 // ── Shot slots ────────────────────────────────────────────────────────────────
 document.querySelectorAll('.shot-slot').forEach(slot => {
-  const type      = slot.dataset.type;
-  const fileInput = slot.querySelector('input[type="file"]');
-  const preview   = slot.querySelector('img.preview');
-  const removeBtn = slot.querySelector('.shot-remove');
+  const type        = slot.dataset.type;
+  const cameraInput = slot.querySelector('.input-camera');
+  const galleryInput= slot.querySelector('.input-gallery');
+  const preview     = slot.querySelector('img.preview');
+  const removeBtn   = slot.querySelector('.shot-remove');
 
+  // Tap slot → camera
   slot.addEventListener('click', e => {
     if (e.target === removeBtn || removeBtn.contains(e.target)) return;
     if (slot.classList.contains('captured')) return;
-    fileInput.click();
+    cameraInput.click();
   });
 
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files[0];
+  async function handleFile(file) {
     if (!file) return;
     preview.src = URL.createObjectURL(file);
     slot.classList.add('captured');
     const compressed = await compressPhoto(file);
     photos[type] = { ...compressed, name: type + '.jpg' };
     checkSubmit();
-  });
+  }
+
+  cameraInput.addEventListener('change',  () => handleFile(cameraInput.files[0]));
+  galleryInput.addEventListener('change', () => handleFile(galleryInput.files[0]));
 
   removeBtn.addEventListener('click', e => {
     e.stopPropagation();
     preview.src = '';
     slot.classList.remove('captured');
-    fileInput.value = '';
+    cameraInput.value = '';
+    galleryInput.value = '';
     photos[type] = null;
     checkSubmit();
+  });
+});
+
+// Gallery pick buttons (outside the slot, one per shot type)
+document.querySelectorAll('.btn-gallery-pick').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const slot = document.getElementById(btn.dataset.for);
+    slot.querySelector('.input-gallery').click();
   });
 });
 
@@ -801,7 +831,10 @@ function resetForm() {
   document.querySelectorAll('.shot-slot').forEach(slot => {
     slot.classList.remove('captured');
     slot.querySelector('img.preview').src = '';
-    slot.querySelector('input[type="file"]').value = '';
+    const ci = slot.querySelector('.input-camera');
+    const gi = slot.querySelector('.input-gallery');
+    if (ci) ci.value = '';
+    if (gi) gi.value = '';
   });
   photos = { full: null, detail: null, edge: null, wet: null };
   checkSubmit();
