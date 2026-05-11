@@ -182,7 +182,8 @@
       padding: 14px 16px; margin-bottom: 12px;
     }
     .slab-attach-item__id { font-family: monospace; font-size: 0.85rem; color: var(--text-faint); }
-    .slab-attach-item__mat { font-size: 1rem; font-weight: 600; color: var(--text); margin: 2px 0 12px; }
+    .slab-attach-item__mat { font-size: 1rem; font-weight: 600; color: var(--text); margin: 2px 0 4px; }
+    .slab-attach-item__dims { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; }
     .attach-drop {
       border: 2px dashed var(--border); border-radius: var(--r);
       padding: 20px; text-align: center; font-size: 0.85rem;
@@ -195,6 +196,19 @@
       border: 2px solid var(--green);
     }
     .attach-submit { margin-top: 10px; }
+
+    /* ── search ── */
+    .filter-search { position: relative; }
+    .filter-search input {
+      background: var(--bg-3); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--r);
+      padding: 10px 10px 10px 36px; width: 100%; font-size: 0.95rem;
+    }
+    .filter-search input:focus { border-color: var(--gold); outline: none; }
+    .filter-search__icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--text-faint); font-size: 0.9rem; pointer-events: none;
+    }
 
     /* ── photo source modal ── */
     .photo-modal-backdrop {
@@ -264,12 +278,15 @@
 
     <!-- Material -->
     <div class="field">
-      <label>Materiał *</label>
+      <label>Materiał (PL) *</label>
       <div class="autocomplete-wrap">
         <input type="text" id="materialPl" placeholder="np. Vanga Red" autocomplete="off" />
-        <input type="hidden" id="materialEn" />
         <div class="autocomplete-list" id="autocompleteList"></div>
       </div>
+    </div>
+    <div class="field" id="materialEnField" style="display:none">
+      <label>Materiał (EN) <span style="color:var(--text-faint);font-weight:400">— opcjonalnie dla nowych nazw</span></label>
+      <input type="text" id="materialEn" placeholder="np. Vanga Red (EN)" autocomplete="off" />
     </div>
 
     <div class="field-row">
@@ -412,6 +429,12 @@
 
   <!-- ═══ PAGE: BULK ATTACH ════════════════════════════════════════════════ -->
   <div class="page" id="page-attach">
+    <div class="attach-search-wrap" id="attachSearchWrap" style="display:none; padding-bottom:12px;">
+      <div class="filter-search">
+        <span class="filter-search__icon">🔍</span>
+        <input type="search" id="attachSearch" placeholder="Szukaj materiału lub ID płyty…" autocomplete="off" />
+      </div>
+    </div>
     <div id="attachList">
       <div class="empty">
         <div class="empty-icon">⏳</div>
@@ -453,7 +476,7 @@
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 // Replace this with your deployed Apps Script web app URL
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzdG5i5bKPgtxHlCJkbMBUUq8LBlpnC46fwqoHQcLSN_UodxxjpyN7CwKeUmESskxr1/exec';
+const BACKEND_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL';
 
 // Max dimension (px on longest side) — quality is fixed at 0.88, no byte-target loop
 const COMPRESS_MAX_DIM = 2000;
@@ -916,8 +939,13 @@ attachGalleryInput.addEventListener('change', () => {
 });
 
 async function loadAttachPage() {
-  const list = document.getElementById('attachList');
+  const list        = document.getElementById('attachList');
+  const searchWrap  = document.getElementById('attachSearchWrap');
+  const searchInput = document.getElementById('attachSearch');
+
   list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Ładowanie…</div>';
+  searchWrap.style.display = 'none';
+
   try {
     const res = await callGet('getSlabsNoPhoto');
     if (!res.ok) throw new Error(res.error);
@@ -925,55 +953,79 @@ async function loadAttachPage() {
       list.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>Wszystkie płyty mają zdjęcia!</div>';
       return;
     }
-    list.innerHTML = res.slabs.map(s => `
-      <div class="slab-attach-item" id="attach-${s.id}">
-        <div class="slab-attach-item__id">${s.id}</div>
-        <div class="slab-attach-item__mat">${s.material || '—'}</div>
-        <div class="attach-photos" id="thumbs-${s.id}"></div>
-        <div class="attach-drop" id="drop-${s.id}" data-id="${s.id}">
-          📷 Dotknij aby dodać zdjęcie
+
+    // Store full list for filtering
+    const allSlabs = res.slabs;
+    searchWrap.style.display = 'block';
+
+    function renderSlabs(slabs) {
+      if (!slabs.length) {
+        list.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>Brak wyników</div>';
+        return;
+      }
+      list.innerHTML = slabs.map(s => `
+        <div class="slab-attach-item" id="attach-${s.id}">
+          <div class="slab-attach-item__id">${s.id}</div>
+          <div class="slab-attach-item__mat">${s.material || '—'}</div>
+          ${s.length ? `<div class="slab-attach-item__dims">${s.length} × ${s.width} × ${s.thickness} cm</div>` : ''}
+          <div class="attach-photos" id="thumbs-${s.id}"></div>
+          <div class="attach-drop" id="drop-${s.id}" data-id="${s.id}">
+            📷 Dotknij aby dodać zdjęcie
+          </div>
+          <div class="attach-submit">
+            <button class="btn btn-secondary btn-sm" id="attachBtn-${s.id}" data-id="${s.id}" disabled>Wyślij zdjęcia</button>
+          </div>
         </div>
-        <div class="attach-submit">
-          <button class="btn btn-secondary btn-sm" id="attachBtn-${s.id}" data-id="${s.id}" disabled>Wyślij zdjęcia</button>
-        </div>
-      </div>
-    `).join('');
+      `).join('');
 
-    res.slabs.forEach(s => {
-      const drop    = document.getElementById('drop-' + s.id);
-      const btn     = document.getElementById('attachBtn-' + s.id);
-      const pending = {};
+      slabs.forEach(s => {
+        const drop    = document.getElementById('drop-' + s.id);
+        const btn     = document.getElementById('attachBtn-' + s.id);
+        const pending = {};
 
-      // Track which slab is active so the shared inputs know where to send
-      drop.addEventListener('click', () => {
-        activeAttachSlabId = s.id;
-        activeAttachPending = pending;
-        activeAttachBtn = btn;
-        openPhotoModal(s.material || s.id, attachCameraInput, attachGalleryInput);
+        drop.addEventListener('click', () => {
+          activeAttachSlabId  = s.id;
+          activeAttachPending = pending;
+          activeAttachBtn     = btn;
+          openPhotoModal(s.material || s.id, attachCameraInput, attachGalleryInput);
+        });
+
+        drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+        drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+        drop.addEventListener('drop', e => {
+          e.preventDefault(); drop.classList.remove('over');
+          handleAttachFiles(Array.from(e.dataTransfer.files), s.id, pending, btn);
+        });
+
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          btn.textContent = 'Wysyłanie…';
+          let sent = 0;
+          for (const [name, data] of Object.entries(pending)) {
+            postNoCors('attachPhoto', { slab_id: s.id, photo: { ...data, name } });
+            await new Promise(r => setTimeout(r, 800));
+            sent++;
+          }
+          await callGet('triggerBuild').catch(() => {});
+          showToast(`✓ Wysłano ${sent} zdjęć dla ${s.id}`, 'success');
+          document.getElementById('attach-' + s.id).style.opacity = '0.5';
+          btn.textContent = 'Wysłano';
+        });
       });
+    }
 
-      drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
-      drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-      drop.addEventListener('drop', e => {
-        e.preventDefault(); drop.classList.remove('over');
-        handleAttachFiles(Array.from(e.dataTransfer.files), s.id, pending, btn);
-      });
+    // Initial render
+    renderSlabs(allSlabs);
 
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        btn.textContent = 'Wysyłanie…';
-        let sent = 0;
-        for (const [name, data] of Object.entries(pending)) {
-          postNoCors('attachPhoto', { slab_id: s.id, photo: { ...data, name } });
-          await new Promise(r => setTimeout(r, 800)); // serialise to avoid duplicate folders
-          sent++;
-        }
-        // Trigger catalogue build so photo appears without waiting for cron
-        await callGet('triggerBuild').catch(() => {});
-        showToast(`✓ Wysłano ${sent} zdjęć dla ${s.id}`, 'success');
-        document.getElementById('attach-' + s.id).style.opacity = '0.5';
-        btn.textContent = 'Wysłano';
-      });
+    // Wire search
+    searchInput.value = '';
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.toLowerCase().trim();
+      if (!q) { renderSlabs(allSlabs); return; }
+      renderSlabs(allSlabs.filter(s =>
+        s.id.toLowerCase().includes(q) ||
+        (s.material || '').toLowerCase().includes(q)
+      ));
     });
 
   } catch (err) {
