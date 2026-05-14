@@ -560,7 +560,7 @@
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 // Replace this with your deployed Apps Script web app URL
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzdG5i5bKPgtxHlCJkbMBUUq8LBlpnC46fwqoHQcLSN_UodxxjpyN7CwKeUmESskxr1/exec';
+const BACKEND_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL';
 
 // Max dimension (px on longest side) — quality is fixed at 0.88, no byte-target loop
 const COMPRESS_MAX_DIM = 2000;
@@ -1112,14 +1112,22 @@ function renderPhotoList(slabId) {
   if (!container) return;
   const photos = photoCache[slabId] || [];
 
+  const typeColour = { full: '#3d8a4e', detail: '#C5A050', edge: '#5a5a60', wet: '#4a90c4' };
+  const typeLabel  = { full: 'Pełna', detail: 'Detal', edge: 'Krawędź', wet: 'Mokra' };
+
   const items = photos.map(p => {
-    const icon = p.name.toLowerCase().includes('full') ? '📸' :
-                 p.name.toLowerCase().includes('detail') ? '🔍' :
-                 p.name.toLowerCase().includes('edge') ? '📐' :
-                 p.name.toLowerCase().includes('wet') ? '💧' : '🖼️';
+    const lower = p.name.toLowerCase();
+    const type  = ['full','detail','edge','wet'].find(t => lower.includes(t)) || 'other';
+    const colour = typeColour[type] || '#888';
+    const label  = typeLabel[type] || p.name;
+    // Use Drive thumbnail URL — works if user is signed into Google in same browser
+    const thumbUrl = `https://drive.google.com/thumbnail?id=${p.id}&sz=w80`;
     return `<div class="photo-item" id="pi-${p.id}">
-      <span class="photo-item__icon">${icon}</span>
-      <span class="photo-item__name">${p.name}</span>
+      <img class="photo-item__thumb" src="${thumbUrl}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'"
+        style="width:48px;height:36px;object-fit:cover;border-radius:4px;border:2px solid ${colour};flex-shrink:0" />
+      <span style="display:none;width:10px;height:10px;border-radius:50%;background:${colour};flex-shrink:0;margin:0 4px"></span>
+      <span class="photo-item__name">${label}</span>
       <button class="photo-item__delete" onclick="removePhoto('${slabId}','${p.id}')">✕ Usuń</button>
     </div>`;
   }).join('');
@@ -1139,12 +1147,9 @@ function buildEditForm(slabId) {
 
   return `<div class="edit-form" id="ef-${slabId}">
     <div class="section-title" style="margin-top:0">Dane płyty</div>
-    <div class="field-row">
-      <div class="field"><label>Materiał PL</label>
-        <input type="text" id="ef-mat_pl-${slabId}" value="${s.material_name_pl||''}" /></div>
-      <div class="field"><label>Materiał EN</label>
-        <input type="text" id="ef-mat_en-${slabId}" value="${s.material_name_en||''}" /></div>
-    </div>
+    <div class="field"><label>Materiał</label>
+      <input type="text" id="ef-mat_pl-${slabId}" value="${s.material_name_pl||''}" /></div>
+    <input type="hidden" id="ef-mat_en-${slabId}" value="${s.material_name_en||s.material_name_pl||''}" />
     <div class="field-row">
       <div class="field"><label>Rodzaj</label>${sel('stone_type',[['granit','Granit'],['kwarcyt','Kwarcyt']], s.stone_type)}</div>
       <div class="field"><label>Kolor</label>${sel('colour',[['','— brak —'],['czarny','Czarny'],['biały','Biały'],['szary','Szary'],['czerwony','Czerwony'],['brązowy','Brązowy'],['beżowy','Beżowy'],['zielony','Zielony'],['niebieski','Niebieski'],['złoty','Złoty'],['wielobarwny','Wielobarwny']], s.colour)}</div>
@@ -1163,10 +1168,9 @@ function buildEditForm(slabId) {
       <div class="field"><label>Pochodzenie</label>${sel('origin',[['Indie','Indie'],['Chiny','Chiny'],['Brazylia','Brazylia'],['RPA','RPA'],['Norwegia','Norwegia'],['Włochy','Włochy'],['Hiszpania','Hiszpania'],['Inne','Inne']], s.origin_country)}</div>
       <div class="field"><label>Status</label>${sel('status',[['dostępny','Dostępny'],['zarezerwowany','Zarezerwowany'],['sprzedany','Sprzedany']], (s.status||'').toLowerCase())}</div>
     </div>
-    <div class="field"><label>Uwagi PL</label>
+    <div class="field"><label>Uwagi</label>
       <textarea id="ef-notes_pl-${slabId}">${s.notes_pl||''}</textarea></div>
-    <div class="field"><label>Uwagi EN</label>
-      <textarea id="ef-notes_en-${slabId}">${s.notes_en||''}</textarea></div>
+    <input type="hidden" id="ef-notes_en-${slabId}" value="${s.notes_en||''}" />
     <div class="published-toggle">
       <input type="checkbox" id="ef-pub-${slabId}" ${(s.published===true||s.published==='TRUE')?'checked':''} />
       <label for="ef-pub-${slabId}">Opublikowana w katalogu</label>
