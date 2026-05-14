@@ -3,29 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#1a1c20" />
+  <meta name="theme-color" content="#222426" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="GLG Zdjęcia" />
   <title>GLG Zdjęcia</title>
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/assets/glg-logo-leaf-200.png" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ── tokens ── */
+    /* ── tokens — matches katalog.goldenleafgranit.pl ── */
     :root {
       --gold: #C5A050;
       --gold-soft: #d4b76a;
-      --bg: #1a1c20;
-      --bg-2: #22252c;
-      --bg-3: #2a2e38;
-      --border: #3a3f4e;
-      --text: #ECECF1;
-      --text-muted: #9aa0b4;
-      --text-faint: #6b7290;
-      --green: #4caf7d;
-      --red: #e05252;
+      --gold-dark: #8a6c2a;
+      --bg: #f1ece2;
+      --bg-2: #e8e2d4;
+      --bg-3: #ffffff;
+      --border: #d8d2c4;
+      --border-strong: #bcb39e;
+      --text: #1f2024;
+      --text-muted: #5a5a60;
+      --text-faint: #888690;
+      --green: #3d8a4e;
+      --red: #c0392b;
       --amber: #d4a017;
+      --chrome-bg: #222426;
+      --chrome-border: #3a3d44;
+      --chrome-text: #ECECF1;
+      --chrome-text-muted: #b4b8c4;
       --r: 10px;
       --r-lg: 16px;
     }
@@ -37,21 +45,22 @@
     input, select, textarea { font: inherit; color: var(--text); background: var(--bg-3);
       border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px;
       width: 100%; outline: none; }
-    input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+    input:focus, select:focus, textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(197,160,80,0.15); }
     select option { background: var(--bg-3); }
 
     /* ── layout ── */
     #app { display: flex; flex-direction: column; height: 100%; max-width: 480px; margin: 0 auto; }
 
-    /* ── header ── */
+    /* ── header — dark chrome matching catalogue ── */
     .app-header {
-      background: var(--bg-2); border-bottom: 1px solid var(--border);
+      background: var(--chrome-bg); border-bottom: 1px solid var(--chrome-border);
       padding: 14px 16px; display: flex; align-items: center; gap: 12px;
       position: sticky; top: 0; z-index: 10;
     }
     .app-header img { height: 32px; width: auto; }
-    .app-header__title { font-size: 1rem; font-weight: 600; color: var(--gold); letter-spacing: 0.05em; }
-    .app-header__sub { font-size: 0.75rem; color: var(--text-muted); }
+    .app-header__title { font-family: 'Cinzel', Georgia, serif; font-size: 0.95rem;
+      font-weight: 600; color: var(--gold); letter-spacing: 0.05em; }
+    .app-header__sub { font-size: 0.75rem; color: var(--chrome-text-muted); }
     .app-header__offline {
       margin-left: auto; font-size: 0.7rem; padding: 3px 8px;
       border-radius: 20px; background: var(--amber); color: #1a1a1a;
@@ -60,22 +69,23 @@
     .app-header__offline.show { display: block; }
 
     /* ── tabs ── */
-    .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-2); }
+    .tabs { display: flex; border-bottom: 2px solid var(--border); background: var(--bg-3);
+      box-shadow: 0 1px 4px rgba(40,30,10,0.06); }
     .tab {
       flex: 1; padding: 14px 8px; text-align: center; font-size: 0.9rem;
       font-weight: 500; color: var(--text-muted); background: none;
-      border-bottom: 2px solid transparent; transition: all 0.15s;
+      border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s;
     }
-    .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .tab.active { color: var(--gold-dark); border-bottom-color: var(--gold); font-weight: 600; }
 
     /* ── content ── */
-    .page { flex: 1; overflow-y: auto; padding: 20px 16px 40px; display: none; }
+    .page { flex: 1; overflow-y: auto; padding: 20px 16px 40px; display: none; background: var(--bg); }
     .page.active { display: block; }
 
     /* ── form elements ── */
     .field { margin-bottom: 16px; }
-    .field label { display: block; font-size: 0.8rem; color: var(--text-muted);
-      font-weight: 500; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .field label { display: block; font-size: 0.75rem; color: var(--text-muted);
+      font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
     .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .field-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
@@ -85,25 +95,27 @@
       position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
       background: var(--bg-3); border: 1px solid var(--border); border-top: none;
       border-radius: 0 0 var(--r) var(--r); max-height: 180px; overflow-y: auto;
-      display: none;
+      box-shadow: 0 4px 14px rgba(40,30,10,0.1); display: none;
     }
     .autocomplete-list.open { display: block; }
-    .autocomplete-item { padding: 10px 14px; cursor: pointer; font-size: 0.9rem; }
-    .autocomplete-item:hover, .autocomplete-item.focused { background: var(--bg-2); color: var(--gold); }
+    .autocomplete-item { padding: 10px 14px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover, .autocomplete-item.focused { background: var(--bg-2); color: var(--gold-dark); }
 
     /* ── shot capture area ── */
     .shots-section { margin: 20px 0; }
-    .shots-title { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;
-      letter-spacing: 0.06em; margin-bottom: 12px; font-weight: 500; }
+    .shots-title { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 12px; font-weight: 600; }
     .shots-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .shot-slot {
-      border: 2px dashed var(--border); border-radius: var(--r-lg);
+      border: 2px dashed var(--border-strong); border-radius: var(--r-lg);
       aspect-ratio: 4/3; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 6px;
       cursor: pointer; position: relative; overflow: hidden;
       background: var(--bg-3); transition: border-color 0.15s;
+      box-shadow: 0 1px 3px rgba(40,30,10,0.06);
     }
-    .shot-slot.required { border-color: var(--amber); }
+    .shot-slot.required { border-color: var(--amber); border-style: dashed; }
     .shot-slot.captured { border-color: var(--green); border-style: solid; }
     .shot-slot.captured .shot-placeholder { display: none; }
     .shot-slot img.preview {
@@ -113,12 +125,12 @@
     .shot-slot.captured img.preview { display: block; }
     .shot-placeholder { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .shot-icon { font-size: 1.8rem; }
-    .shot-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600;
+    .shot-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.06em; }
-    .shot-req { font-size: 0.65rem; color: var(--amber); }
+    .shot-req { font-size: 0.65rem; color: var(--amber); font-weight: 600; }
     .shot-remove {
       position: absolute; top: 6px; right: 6px; width: 22px; height: 22px;
-      background: rgba(0,0,0,0.6); border-radius: 50%; color: #fff;
+      background: rgba(0,0,0,0.5); border-radius: 50%; color: #fff;
       font-size: 0.75rem; display: none; align-items: center; justify-content: center;
       z-index: 2;
     }
@@ -127,14 +139,14 @@
 
     /* ── next slab id display ── */
     .slab-id-display {
-      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r);
+      background: var(--chrome-bg); border: 1px solid var(--chrome-border); border-radius: var(--r);
       padding: 14px 16px; margin-bottom: 20px;
       display: flex; align-items: center; justify-content: space-between;
     }
-    .slab-id-display__label { font-size: 0.75rem; color: var(--text-muted); }
+    .slab-id-display__label { font-size: 0.72rem; color: var(--chrome-text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
     .slab-id-display__id { font-family: 'SF Mono', 'Menlo', monospace; font-size: 1.1rem;
       color: var(--gold); font-weight: 600; letter-spacing: 0.05em; }
-    .slab-id-display__status { font-size: 0.75rem; color: var(--text-faint); }
+    .slab-id-display__status { font-size: 0.72rem; color: var(--chrome-text-muted); }
 
     /* ── buttons ── */
     .btn {
@@ -142,16 +154,17 @@
       padding: 14px 20px; border-radius: var(--r); font-weight: 600;
       font-size: 0.95rem; width: 100%; transition: opacity 0.15s;
     }
-    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-primary { background: var(--gold); color: #1a1a1a; }
-    .btn-primary:active:not(:disabled) { opacity: 0.8; }
-    .btn-secondary { background: var(--bg-3); color: var(--text); border: 1px solid var(--border); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-primary { background: var(--gold); color: #1a1a1a; box-shadow: 0 2px 6px rgba(197,160,80,0.3); }
+    .btn-primary:active:not(:disabled) { opacity: 0.85; }
+    .btn-secondary { background: var(--bg-3); color: var(--text); border: 1px solid var(--border-strong); }
+    .btn-secondary:active { background: var(--bg-2); }
     .btn-danger { background: var(--red); color: #fff; }
     .btn-sm { padding: 8px 14px; font-size: 0.85rem; width: auto; }
 
     /* ── progress / feedback ── */
     .progress-bar {
-      height: 4px; background: var(--bg-3); border-radius: 2px;
+      height: 3px; background: var(--bg-2); border-radius: 2px;
       overflow: hidden; margin: 12px 0;
     }
     .progress-bar__fill { height: 100%; background: var(--gold);
@@ -159,14 +172,14 @@
 
     .toast {
       position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r);
-      padding: 12px 20px; font-size: 0.9rem; z-index: 100;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4); white-space: nowrap;
+      background: var(--chrome-bg); border: 1px solid var(--chrome-border); border-radius: var(--r);
+      padding: 12px 20px; font-size: 0.9rem; z-index: 100; color: var(--chrome-text);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2); white-space: nowrap;
       opacity: 0; transition: opacity 0.2s; pointer-events: none;
     }
     .toast.show { opacity: 1; }
-    .toast.success { border-color: var(--green); color: var(--green); }
-    .toast.error { border-color: var(--red); color: var(--red); }
+    .toast.success { border-color: var(--green); color: #3d8a4e; background: #edf7f0; }
+    .toast.error { border-color: var(--red); color: var(--red); background: #fdf0f0; }
 
     /* ── queue indicator ── */
     .queue-banner {
@@ -178,18 +191,19 @@
 
     /* ── bulk attach ── */
     .slab-attach-item {
-      background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--r);
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r);
       padding: 14px 16px; margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(40,30,10,0.06);
     }
-    .slab-attach-item__id { font-family: monospace; font-size: 0.85rem; color: var(--text-faint); }
+    .slab-attach-item__id { font-family: monospace; font-size: 0.82rem; color: var(--text-faint); }
     .slab-attach-item__mat { font-size: 1rem; font-weight: 600; color: var(--text); margin: 2px 0 4px; }
     .slab-attach-item__dims { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px; }
     .attach-drop {
-      border: 2px dashed var(--border); border-radius: var(--r);
+      border: 2px dashed var(--border-strong); border-radius: var(--r);
       padding: 20px; text-align: center; font-size: 0.85rem;
-      color: var(--text-muted); cursor: pointer; transition: border-color 0.15s;
+      color: var(--text-muted); cursor: pointer; transition: border-color 0.15s; background: var(--bg);
     }
-    .attach-drop.over { border-color: var(--gold); color: var(--gold); }
+    .attach-drop.over { border-color: var(--gold); color: var(--gold-dark); background: #fdf8ec; }
     .attach-photos { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
     .attach-thumb {
       width: 64px; height: 64px; border-radius: 6px; object-fit: cover;
@@ -212,38 +226,39 @@
 
     /* ── photo source modal ── */
     .photo-modal-backdrop {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      position: fixed; inset: 0; background: rgba(31,32,36,0.5);
       z-index: 200; display: none; align-items: flex-end;
     }
     .photo-modal-backdrop.open { display: flex; }
     .photo-modal {
-      background: var(--bg-2); border-radius: var(--r-lg) var(--r-lg) 0 0;
+      background: var(--bg-3); border-radius: var(--r-lg) var(--r-lg) 0 0;
       padding: 20px 16px 32px; width: 100%; display: flex; flex-direction: column; gap: 10px;
+      box-shadow: 0 -4px 24px rgba(40,30,10,0.12);
     }
     .photo-modal__title {
-      font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;
-      letter-spacing: 0.08em; font-weight: 500; text-align: center; margin-bottom: 4px;
+      font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.08em; font-weight: 600; text-align: center; margin-bottom: 4px;
     }
     .photo-modal__btn {
-      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r);
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--r);
       padding: 16px; display: flex; align-items: center; gap: 14px;
-      font-size: 1rem; color: var(--text); cursor: pointer; transition: border-color 0.15s;
+      font-size: 1rem; color: var(--text); cursor: pointer; transition: border-color 0.15s, background 0.15s;
     }
-    .photo-modal__btn:hover, .photo-modal__btn:active { border-color: var(--gold); }
+    .photo-modal__btn:hover, .photo-modal__btn:active { border-color: var(--gold); background: #fdf8ec; }
     .photo-modal__btn-icon { font-size: 1.6rem; width: 36px; text-align: center; }
     .photo-modal__btn-text { display: flex; flex-direction: column; gap: 2px; }
     .photo-modal__btn-label { font-weight: 600; }
     .photo-modal__btn-sub { font-size: 0.8rem; color: var(--text-muted); }
     .photo-modal__cancel {
-      background: none; border: none; color: var(--text-muted);
+      background: none; border: none; color: var(--text-faint);
       padding: 12px; font-size: 0.95rem; cursor: pointer; text-align: center;
     }
     .empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
     .empty-icon { font-size: 3rem; margin-bottom: 12px; }
 
     /* ── section divider ── */
-    .section-title { font-size: 0.75rem; color: var(--text-faint); text-transform: uppercase;
-      letter-spacing: 0.08em; font-weight: 500; margin: 24px 0 12px; }
+    .section-title { font-size: 0.72rem; color: var(--text-faint); text-transform: uppercase;
+      letter-spacing: 0.08em; font-weight: 600; margin: 24px 0 12px; }
   </style>
 </head>
 <body>
@@ -476,7 +491,7 @@
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 // Replace this with your deployed Apps Script web app URL
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzdG5i5bKPgtxHlCJkbMBUUq8LBlpnC46fwqoHQcLSN_UodxxjpyN7CwKeUmESskxr1/exec';
+const BACKEND_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL';
 
 // Max dimension (px on longest side) — quality is fixed at 0.88, no byte-target loop
 const COMPRESS_MAX_DIM = 2000;
@@ -1006,6 +1021,9 @@ async function loadAttachPage() {
             await new Promise(r => setTimeout(r, 800));
             sent++;
           }
+          // Wait 5s after last upload before triggering build — Apps Script Drive
+          // writes are slow (2-5s) and no-cors gives us no confirmation of completion.
+          await new Promise(r => setTimeout(r, 5000));
           await callGet('triggerBuild').catch(() => {});
           showToast(`✓ Wysłano ${sent} zdjęć dla ${s.id}`, 'success');
           document.getElementById('attach-' + s.id).style.opacity = '0.5';

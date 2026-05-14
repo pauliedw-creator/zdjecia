@@ -5,8 +5,8 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#1a1c20",
-  "theme_color": "#1a1c20",
+  "background_color": "#f1ece2",
+  "theme_color": "#222426",
   "icons": [
     { "src": "/assets/glg-logo-leaf-200.png", "sizes": "200x200", "type": "image/png" },
     { "src": "/assets/glg-logo-leaf.png", "sizes": "816x493", "type": "image/png", "purpose": "any" }
