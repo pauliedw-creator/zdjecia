@@ -259,6 +259,78 @@
     /* ── section divider ── */
     .section-title { font-size: 0.72rem; color: var(--text-faint); text-transform: uppercase;
       letter-spacing: 0.08em; font-weight: 600; margin: 24px 0 12px; }
+
+    /* ── manage tab — accordion cards ── */
+    .manage-card {
+      background: var(--bg-3); border: 1px solid var(--border); border-radius: var(--r);
+      margin-bottom: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(40,30,10,0.06);
+    }
+    .manage-card__header {
+      padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+      user-select: none; transition: background 0.1s;
+    }
+    .manage-card__header:hover { background: var(--bg-2); }
+    .manage-card__header.open { border-bottom: 1px solid var(--border); background: var(--bg-2); }
+    .manage-card__id { font-family: monospace; font-size: 0.78rem; color: var(--text-faint); white-space: nowrap; }
+    .manage-card__info { flex: 1; min-width: 0; }
+    .manage-card__mat { font-size: 0.95rem; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .manage-card__dims { font-size: 0.78rem; color: var(--text-muted); margin-top: 1px; }
+    .manage-card__chevron { color: var(--text-faint); font-size: 0.8rem; transition: transform 0.2s; flex-shrink: 0; }
+    .manage-card__header.open .manage-card__chevron { transform: rotate(180deg); }
+
+    .status-pill {
+      font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+      text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0;
+    }
+    .status-pill--dostepny   { background: #edf7f0; color: #3d8a4e; border: 1px solid #b8dfc4; }
+    .status-pill--zarezerwowany { background: #fdf7e7; color: #8a6b1a; border: 1px solid #e8d8a0; }
+    .status-pill--sprzedany  { background: var(--bg-2); color: var(--text-faint); border: 1px solid var(--border); }
+    .status-pill--unpublished { background: #fdf0f0; color: #c0392b; border: 1px solid #f5c0c0; }
+
+    .manage-card__body { padding: 16px; display: none; }
+    .manage-card__body.open { display: block; }
+
+    /* photos section */
+    .photos-section { margin-bottom: 20px; }
+    .photos-section__title { font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 10px; }
+    .photos-loading { font-size: 0.85rem; color: var(--text-faint); padding: 8px 0; }
+    .photo-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .photo-item {
+      display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--r);
+    }
+    .photo-item__icon { font-size: 1rem; flex-shrink: 0; }
+    .photo-item__name { flex: 1; font-size: 0.85rem; font-family: monospace; color: var(--text); }
+    .photo-item__delete {
+      background: none; border: none; color: var(--red); font-size: 0.8rem;
+      padding: 4px 8px; cursor: pointer; border-radius: 4px; flex-shrink: 0;
+    }
+    .photo-item__delete:hover { background: #fdf0f0; }
+    .photo-add-btn {
+      display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px;
+      background: var(--bg); border: 1px dashed var(--border-strong); border-radius: var(--r);
+      font-size: 0.88rem; color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+    }
+    .photo-add-btn:hover { border-color: var(--gold); color: var(--gold-dark); background: #fdf8ec; }
+
+    /* edit form inside card */
+    .edit-form .field { margin-bottom: 12px; }
+    .edit-form .field label { font-size: 0.7rem; margin-bottom: 4px; }
+    .edit-form input, .edit-form select, .edit-form textarea {
+      padding: 9px 11px; font-size: 0.9rem;
+    }
+    .edit-form textarea { height: 60px; resize: vertical; }
+    .edit-form .field-row { gap: 8px; }
+    .edit-form .field-row-3 { gap: 8px; }
+    .published-toggle {
+      display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    }
+    .published-toggle label { font-size: 0.85rem; color: var(--text); font-weight: 500; margin: 0; text-transform: none; letter-spacing: 0; }
+    .published-toggle input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer; }
+    .save-btn-wrap { margin-top: 14px; display: flex; gap: 8px; }
+    .save-status { font-size: 0.82rem; padding: 6px 0; color: var(--text-muted); }
   </style>
 </head>
 <body>
@@ -278,7 +350,7 @@
 
   <div class="tabs">
     <button class="tab active" data-tab="new">➕ Nowa płyta</button>
-    <button class="tab" data-tab="attach">📎 Dodaj zdjęcia</button>
+    <button class="tab" data-tab="attach">📋 Zarządzaj płytami</button>
   </div>
 
   <!-- ═══ PAGE: NEW SLAB ═══════════════════════════════════════════════════ -->
@@ -442,19 +514,16 @@
     </button>
   </div>
 
-  <!-- ═══ PAGE: BULK ATTACH ════════════════════════════════════════════════ -->
+  <!-- ═══ PAGE: MANAGE SLABS ══════════════════════════════════════════════ -->
   <div class="page" id="page-attach">
-    <div class="attach-search-wrap" id="attachSearchWrap" style="display:none; padding-bottom:12px;">
+    <div id="attachSearchWrap" style="display:none; padding-bottom:12px;">
       <div class="filter-search">
         <span class="filter-search__icon">🔍</span>
         <input type="search" id="attachSearch" placeholder="Szukaj materiału lub ID płyty…" autocomplete="off" />
       </div>
     </div>
     <div id="attachList">
-      <div class="empty">
-        <div class="empty-icon">⏳</div>
-        Ładowanie płyt bez zdjęć…
-      </div>
+      <div class="empty"><div class="empty-icon">⏳</div>Ładowanie płyt…</div>
     </div>
   </div>
 
@@ -491,7 +560,7 @@
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
 // Replace this with your deployed Apps Script web app URL
-const BACKEND_URL = 'https://script.google.com/macros/s/AKfycbzdG5i5bKPgtxHlCJkbMBUUq8LBlpnC46fwqoHQcLSN_UodxxjpyN7CwKeUmESskxr1/exec';
+const BACKEND_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL';
 
 // Max dimension (px on longest side) — quality is fixed at 0.88, no byte-target loop
 const COMPRESS_MAX_DIM = 2000;
@@ -647,7 +716,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById('page-' + tab.dataset.tab).classList.add('active');
-    if (tab.dataset.tab === 'attach') loadAttachPage();
+    if (tab.dataset.tab === 'attach') loadManageTab();
   });
 });
 
@@ -934,138 +1003,290 @@ function resetForm() {
   checkSubmit();
 }
 
-// ── Attach page ────────────────────────────────────────────────────────────
-// Shared inputs at document level — more reliable modal trigger on Android
-const attachCameraInput  = document.getElementById('attachCameraInput');
-const attachGalleryInput = document.getElementById('attachGalleryInput');
-let activeAttachSlabId   = null;
-let activeAttachPending  = {};
-let activeAttachBtn      = null;
+// ── Manage Slabs tab ──────────────────────────────────────────────────────────
+let allManageSlabs  = [];
+let photoCache      = {}; // slab_id → [{id, name}]
 
-attachCameraInput.addEventListener('change', () => {
-  if (!activeAttachSlabId) return;
-  handleAttachFiles(Array.from(attachCameraInput.files), activeAttachSlabId, activeAttachPending, activeAttachBtn);
-  attachCameraInput.value = '';
-});
-attachGalleryInput.addEventListener('change', () => {
-  if (!activeAttachSlabId) return;
-  handleAttachFiles(Array.from(attachGalleryInput.files), activeAttachSlabId, activeAttachPending, activeAttachBtn);
-  attachGalleryInput.value = '';
-});
+async function loadManageTab() {
+  const list       = document.getElementById('attachList');
+  const searchWrap = document.getElementById('attachSearchWrap');
+  const searchEl   = document.getElementById('attachSearch');
 
-async function loadAttachPage() {
-  const list        = document.getElementById('attachList');
-  const searchWrap  = document.getElementById('attachSearchWrap');
-  const searchInput = document.getElementById('attachSearch');
-
-  list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Ładowanie…</div>';
+  list.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Ładowanie płyt…</div>';
   searchWrap.style.display = 'none';
+  photoCache = {};
 
   try {
-    const res = await callGet('getSlabsNoPhoto');
+    const res = await callGet('getSlabs');
     if (!res.ok) throw new Error(res.error);
     if (!res.slabs.length) {
-      list.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>Wszystkie płyty mają zdjęcia!</div>';
+      list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>Brak płyt w bazie.</div>';
       return;
     }
 
-    // Store full list for filtering
-    const allSlabs = res.slabs;
+    allManageSlabs = res.slabs;
     searchWrap.style.display = 'block';
+    searchEl.value = '';
+    searchEl.addEventListener('input', () => renderManageList(
+      allManageSlabs.filter(s =>
+        (s.slab_id || '').toLowerCase().includes(searchEl.value.toLowerCase()) ||
+        (s.material_name_pl || '').toLowerCase().includes(searchEl.value.toLowerCase())
+      )
+    ));
 
-    function renderSlabs(slabs) {
-      if (!slabs.length) {
-        list.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>Brak wyników</div>';
-        return;
-      }
-      list.innerHTML = slabs.map(s => `
-        <div class="slab-attach-item" id="attach-${s.id}">
-          <div class="slab-attach-item__id">${s.id}</div>
-          <div class="slab-attach-item__mat">${s.material || '—'}</div>
-          ${s.length ? `<div class="slab-attach-item__dims">${s.length} × ${s.width} × ${s.thickness} cm</div>` : ''}
-          <div class="attach-photos" id="thumbs-${s.id}"></div>
-          <div class="attach-drop" id="drop-${s.id}" data-id="${s.id}">
-            📷 Dotknij aby dodać zdjęcie
-          </div>
-          <div class="attach-submit">
-            <button class="btn btn-secondary btn-sm" id="attachBtn-${s.id}" data-id="${s.id}" disabled>Wyślij zdjęcia</button>
-          </div>
-        </div>
-      `).join('');
+    renderManageList(allManageSlabs);
 
-      slabs.forEach(s => {
-        const drop    = document.getElementById('drop-' + s.id);
-        const btn     = document.getElementById('attachBtn-' + s.id);
-        const pending = {};
-
-        drop.addEventListener('click', () => {
-          activeAttachSlabId  = s.id;
-          activeAttachPending = pending;
-          activeAttachBtn     = btn;
-          openPhotoModal(s.material || s.id, attachCameraInput, attachGalleryInput);
-        });
-
-        drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
-        drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-        drop.addEventListener('drop', e => {
-          e.preventDefault(); drop.classList.remove('over');
-          handleAttachFiles(Array.from(e.dataTransfer.files), s.id, pending, btn);
-        });
-
-        btn.addEventListener('click', async () => {
-          btn.disabled = true;
-          btn.textContent = 'Wysyłanie…';
-          let sent = 0;
-          for (const [name, data] of Object.entries(pending)) {
-            postNoCors('attachPhoto', { slab_id: s.id, photo: { ...data, name } });
-            await new Promise(r => setTimeout(r, 800));
-            sent++;
-          }
-          // Wait 5s after last upload before triggering build — Apps Script Drive
-          // writes are slow (2-5s) and no-cors gives us no confirmation of completion.
-          await new Promise(r => setTimeout(r, 5000));
-          await callGet('triggerBuild').catch(() => {});
-          showToast(`✓ Wysłano ${sent} zdjęć dla ${s.id}`, 'success');
-          document.getElementById('attach-' + s.id).style.opacity = '0.5';
-          btn.textContent = 'Wysłano';
-        });
-      });
-    }
-
-    // Initial render
-    renderSlabs(allSlabs);
-
-    // Wire search
-    searchInput.value = '';
-    searchInput.addEventListener('input', () => {
-      const q = searchInput.value.toLowerCase().trim();
-      if (!q) { renderSlabs(allSlabs); return; }
-      renderSlabs(allSlabs.filter(s =>
-        s.id.toLowerCase().includes(q) ||
-        (s.material || '').toLowerCase().includes(q)
-      ));
-    });
-
-  } catch (err) {
+  } catch(err) {
     list.innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div>${err.message}</div>`;
   }
 }
 
-async function handleAttachFiles(files, slabId, pending, btn) {
-  const thumbs = document.getElementById('thumbs-' + slabId);
-  for (const file of files) {
-    const name = guessPhotoType(file.name, pending) + '.jpg';
-    const compressed = await compressPhoto(file);
-    pending[name] = compressed;
-    // Thumbnail
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    img.className = 'attach-thumb';
-    img.title = name;
-    thumbs.appendChild(img);
+function getStatusPill(slab) {
+  const pub = slab.published === true || slab.published === 'TRUE';
+  if (!pub) return `<span class="status-pill status-pill--unpublished">Ukryty</span>`;
+  const s = String(slab.status || '').toLowerCase();
+  if (s.includes('sprzed')) return `<span class="status-pill status-pill--sprzedany">Sprzedany</span>`;
+  if (s.includes('zarezerwow')) return `<span class="status-pill status-pill--zarezerwowany">Zarezerwowany</span>`;
+  return `<span class="status-pill status-pill--dostepny">Dostępny</span>`;
+}
+
+function renderManageList(slabs) {
+  const list = document.getElementById('attachList');
+  if (!slabs.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>Brak wyników</div>';
+    return;
   }
-  btn.disabled = false;
-  btn.textContent = `Wyślij ${Object.keys(pending).length} zdjęć`;
+
+  list.innerHTML = slabs.map(s => {
+    const dims = [s.length_cm, s.width_cm, s.thickness_cm].filter(Boolean).join(' × ');
+    return `
+    <div class="manage-card" id="mc-${s.slab_id}">
+      <div class="manage-card__header" onclick="toggleManageCard('${s.slab_id}', this)">
+        <div class="manage-card__info">
+          <div class="manage-card__mat">${s.material_name_pl || '—'}</div>
+          <div class="manage-card__id">${s.slab_id}${dims ? ' · ' + dims + ' cm' : ''}</div>
+        </div>
+        ${getStatusPill(s)}
+        <span class="manage-card__chevron">▼</span>
+      </div>
+      <div class="manage-card__body" id="mb-${s.slab_id}"></div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleManageCard(slabId, headerEl) {
+  const body    = document.getElementById('mb-' + slabId);
+  const isOpen  = body.classList.contains('open');
+
+  // Close any other open cards
+  document.querySelectorAll('.manage-card__body.open').forEach(b => {
+    b.classList.remove('open');
+    b.closest('.manage-card').querySelector('.manage-card__header').classList.remove('open');
+  });
+
+  if (isOpen) return; // was open — just close it
+
+  headerEl.classList.add('open');
+  body.classList.add('open');
+
+  // Render skeleton immediately
+  body.innerHTML = `
+    <div class="photos-section">
+      <div class="photos-section__title">Zdjęcia</div>
+      <div class="photos-loading" id="pl-${slabId}">Ładowanie…</div>
+    </div>
+    ${buildEditForm(slabId)}`;
+
+  // Load photos lazily
+  if (!photoCache[slabId]) {
+    try {
+      const res = await callGet('getSlabPhotos', { slab_id: slabId });
+      photoCache[slabId] = res.ok ? res.photos : [];
+    } catch { photoCache[slabId] = []; }
+  }
+  renderPhotoList(slabId);
+}
+
+function renderPhotoList(slabId) {
+  const container = document.getElementById('pl-' + slabId);
+  if (!container) return;
+  const photos = photoCache[slabId] || [];
+
+  const items = photos.map(p => {
+    const icon = p.name.toLowerCase().includes('full') ? '📸' :
+                 p.name.toLowerCase().includes('detail') ? '🔍' :
+                 p.name.toLowerCase().includes('edge') ? '📐' :
+                 p.name.toLowerCase().includes('wet') ? '💧' : '🖼️';
+    return `<div class="photo-item" id="pi-${p.id}">
+      <span class="photo-item__icon">${icon}</span>
+      <span class="photo-item__name">${p.name}</span>
+      <button class="photo-item__delete" onclick="removePhoto('${slabId}','${p.id}')">✕ Usuń</button>
+    </div>`;
+  }).join('');
+
+  container.outerHTML = `
+    <div class="photo-list" id="pl-${slabId}">${items || '<div style="font-size:0.85rem;color:var(--text-faint);padding:4px 0">Brak zdjęć</div>'}</div>
+    <button class="photo-add-btn" onclick="openAddPhotoForSlab('${slabId}')">
+      📷 Dodaj zdjęcie
+    </button>`;
+}
+
+function buildEditForm(slabId) {
+  const s = allManageSlabs.find(x => x.slab_id === slabId) || {};
+  const sel = (name, opts, val) => `<select id="ef-${name}-${slabId}">${
+    opts.map(([v,l]) => `<option value="${v}"${val===v?' selected':''}>${l}</option>`).join('')
+  }</select>`;
+
+  return `<div class="edit-form" id="ef-${slabId}">
+    <div class="section-title" style="margin-top:0">Dane płyty</div>
+    <div class="field-row">
+      <div class="field"><label>Materiał PL</label>
+        <input type="text" id="ef-mat_pl-${slabId}" value="${s.material_name_pl||''}" /></div>
+      <div class="field"><label>Materiał EN</label>
+        <input type="text" id="ef-mat_en-${slabId}" value="${s.material_name_en||''}" /></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Rodzaj</label>${sel('stone_type',[['granit','Granit'],['kwarcyt','Kwarcyt']], s.stone_type)}</div>
+      <div class="field"><label>Kolor</label>${sel('colour',[['','— brak —'],['czarny','Czarny'],['biały','Biały'],['szary','Szary'],['czerwony','Czerwony'],['brązowy','Brązowy'],['beżowy','Beżowy'],['zielony','Zielony'],['niebieski','Niebieski'],['złoty','Złoty'],['wielobarwny','Wielobarwny']], s.colour)}</div>
+    </div>
+    <div class="section-title">Wymiary (cm)</div>
+    <div class="field-row-3">
+      <div class="field"><label>Długość</label><input type="number" id="ef-len-${slabId}" value="${s.length_cm||''}" inputmode="decimal" /></div>
+      <div class="field"><label>Szerokość</label><input type="number" id="ef-wid-${slabId}" value="${s.width_cm||''}" inputmode="decimal" /></div>
+      <div class="field"><label>Grubość</label><input type="number" id="ef-thk-${slabId}" value="${s.thickness_cm||''}" inputmode="decimal" /></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Wykończenie</label>${sel('finish',[['polerowany','Polerowany'],['szczotkowany','Szczotkowany'],['płomieniowany','Płomieniowany'],['piaskowany','Piaskowany'],['surowy','Surowy']], s.finish)}</div>
+      <div class="field"><label>Krawędź</label>${sel('edge',[['cięty','Cięty'],['naturalny','Naturalny']], s.edge_condition)}</div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Pochodzenie</label>${sel('origin',[['Indie','Indie'],['Chiny','Chiny'],['Brazylia','Brazylia'],['RPA','RPA'],['Norwegia','Norwegia'],['Włochy','Włochy'],['Hiszpania','Hiszpania'],['Inne','Inne']], s.origin_country)}</div>
+      <div class="field"><label>Status</label>${sel('status',[['dostępny','Dostępny'],['zarezerwowany','Zarezerwowany'],['sprzedany','Sprzedany']], (s.status||'').toLowerCase())}</div>
+    </div>
+    <div class="field"><label>Uwagi PL</label>
+      <textarea id="ef-notes_pl-${slabId}">${s.notes_pl||''}</textarea></div>
+    <div class="field"><label>Uwagi EN</label>
+      <textarea id="ef-notes_en-${slabId}">${s.notes_en||''}</textarea></div>
+    <div class="published-toggle">
+      <input type="checkbox" id="ef-pub-${slabId}" ${(s.published===true||s.published==='TRUE')?'checked':''} />
+      <label for="ef-pub-${slabId}">Opublikowana w katalogu</label>
+    </div>
+    <div class="save-btn-wrap">
+      <button class="btn btn-primary btn-sm" onclick="saveSlab('${slabId}')">Zapisz zmiany</button>
+      <span class="save-status" id="ss-${slabId}"></span>
+    </div>
+  </div>`;
+}
+
+async function saveSlab(slabId) {
+  const statusEl = document.getElementById('ss-' + slabId);
+  statusEl.textContent = 'Zapisywanie…';
+
+  const params = {
+    slab_id:          slabId,
+    material_name_pl: document.getElementById(`ef-mat_pl-${slabId}`)?.value.trim(),
+    material_name_en: document.getElementById(`ef-mat_en-${slabId}`)?.value.trim(),
+    stone_type:       document.getElementById(`ef-stone_type-${slabId}`)?.value,
+    colour:           document.getElementById(`ef-colour-${slabId}`)?.value,
+    length_cm:        document.getElementById(`ef-len-${slabId}`)?.value,
+    width_cm:         document.getElementById(`ef-wid-${slabId}`)?.value,
+    thickness_cm:     document.getElementById(`ef-thk-${slabId}`)?.value,
+    finish:           document.getElementById(`ef-finish-${slabId}`)?.value,
+    edge_condition:   document.getElementById(`ef-edge-${slabId}`)?.value,
+    origin_country:   document.getElementById(`ef-origin-${slabId}`)?.value,
+    status:           document.getElementById(`ef-status-${slabId}`)?.value,
+    notes_pl:         document.getElementById(`ef-notes_pl-${slabId}`)?.value.trim(),
+    notes_en:         document.getElementById(`ef-notes_en-${slabId}`)?.value.trim(),
+    published:        document.getElementById(`ef-pub-${slabId}`)?.checked ? 'true' : 'false'
+  };
+
+  try {
+    const res = await callGet('updateSlab', params);
+    if (res.ok) {
+      statusEl.style.color = 'var(--green)';
+      statusEl.textContent = '✓ Zapisano — katalog aktualizuje się';
+      // Update local cache
+      const idx = allManageSlabs.findIndex(s => s.slab_id === slabId);
+      if (idx >= 0) {
+        allManageSlabs[idx] = { ...allManageSlabs[idx], ...params, published: params.published === 'true' };
+        // Update status pill in header
+        const header = document.querySelector(`#mc-${slabId} .manage-card__header`);
+        if (header) {
+          const pill = header.querySelector('.status-pill');
+          if (pill) pill.outerHTML = getStatusPill(allManageSlabs[idx]);
+          const matEl = header.querySelector('.manage-card__mat');
+          if (matEl) matEl.textContent = params.material_name_pl || '—';
+        }
+      }
+    } else throw new Error(res.error);
+  } catch(err) {
+    statusEl.style.color = 'var(--red)';
+    statusEl.textContent = '✗ Błąd: ' + err.message;
+  }
+}
+
+async function removePhoto(slabId, fileId) {
+  if (!confirm('Usunąć to zdjęcie z Drive? Nie można cofnąć.')) return;
+  const item = document.getElementById('pi-' + fileId);
+  if (item) item.style.opacity = '0.4';
+
+  try {
+    const res = await callGet('deletePhoto', { slab_id: slabId, file_id: fileId });
+    if (res.ok) {
+      photoCache[slabId] = (photoCache[slabId] || []).filter(p => p.id !== fileId);
+      if (item) item.remove();
+      showToast('Zdjęcie usunięte — katalog aktualizuje się', 'success');
+    } else throw new Error(res.error);
+  } catch(err) {
+    if (item) item.style.opacity = '1';
+    showToast('Błąd: ' + err.message, 'error');
+  }
+}
+
+function openAddPhotoForSlab(slabId) {
+  activeAttachSlabId  = slabId;
+  activeAttachPending = {};
+  activeAttachBtn     = null;
+  openPhotoModal('Dodaj zdjęcie — ' + slabId, attachCameraInput, attachGalleryInput);
+}
+
+// Override shared input handlers to handle both old attach flow and new manage tab
+attachCameraInput.addEventListener('change', async () => {
+  if (!activeAttachSlabId) return;
+  const file = attachCameraInput.files[0];
+  if (!file) return;
+  await handleAndUploadAttach(file, activeAttachSlabId);
+  attachCameraInput.value = '';
+});
+attachGalleryInput.addEventListener('change', async () => {
+  if (!activeAttachSlabId) return;
+  for (const file of Array.from(attachGalleryInput.files)) {
+    await handleAndUploadAttach(file, activeAttachSlabId);
+  }
+  attachGalleryInput.value = '';
+});
+
+async function handleAndUploadAttach(file, slabId) {
+  const existing  = (photoCache[slabId] || []).map(p => p.name);
+  const photoType = guessPhotoType(file.name, Object.fromEntries(existing.map(n => [n, true])));
+  const name      = photoType + '.jpg';
+  const compressed = await compressPhoto(file);
+
+  postNoCors('attachPhoto', { slab_id: slabId, photo: { ...compressed, name } });
+  showToast(`📤 Wysyłanie ${name}…`);
+
+  // Optimistic UI — add to cache and re-render after delay
+  await new Promise(r => setTimeout(r, 5000));
+  // Reload photos from server to confirm
+  try {
+    const res = await callGet('getSlabPhotos', { slab_id: slabId });
+    if (res.ok) {
+      photoCache[slabId] = res.photos;
+      renderPhotoList(slabId);
+      showToast(`✓ ${name} dodane`, 'success');
+      await callGet('triggerBuild').catch(() => {});
+    }
+  } catch {}
 }
 
 function guessPhotoType(filename, existing) {
