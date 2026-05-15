@@ -1351,27 +1351,21 @@ function showToast(msg, type = '') {
 
 // ── Password gate ─────────────────────────────────────────────────────────────
 const GATE_KEY = 'glg_auth';
-const GATE_HASH = 'aa44b014d5c24d4314ca751b12a8a065f490a2fd'; // SHA1 of password
-
-async function sha1(str) {
-  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
+// Password stored reversed + base64 to avoid plain-text in source
+const GATE_TOKEN = btoa('00472wDn'.split('').reverse().join(''));
 
 function showGate() {
-  const gate = document.getElementById('gate');
-  gate.style.display = 'flex';
-  document.getElementById('gateInput').focus();
+  document.getElementById('gate').style.display = 'flex';
+  setTimeout(() => document.getElementById('gateInput').focus(), 100);
 }
 
 function hideGate() {
   document.getElementById('gate').style.display = 'none';
 }
 
-async function checkGate() {
+function checkGate() {
   const input = document.getElementById('gateInput').value;
-  const  = await sha1(input);
-  if (hash === GATE_HASH) {
+  if (btoa(input) === GATE_TOKEN) {
     localStorage.setItem(GATE_KEY, '1');
     hideGate();
     init();
@@ -1379,8 +1373,10 @@ async function checkGate() {
     const err = document.getElementById('gateError');
     err.style.display = 'block';
     document.getElementById('gateInput').value = '';
-    document.getElementById('gateInput').focus();
-    setTimeout(() => err.style.display = 'none', 3000);
+    setTimeout(() => {
+      err.style.display = 'none';
+      document.getElementById('gateInput').focus();
+    }, 2000);
   }
 }
 
