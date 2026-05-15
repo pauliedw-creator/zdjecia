@@ -1351,7 +1351,7 @@ function showToast(msg, type = '') {
 
 // ── Password gate ─────────────────────────────────────────────────────────────
 const GATE_KEY = 'glg_auth';
-const GATE_HASH = '7c4a8d09ca3762af61e59520943dc26494f8941b'; // SHA1 of nDw27400
+const GATE_HASH = 'aa44b014d5c24d4314ca751b12a8a065f490a2fd'; // SHA1 of password
 
 async function sha1(str) {
   const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
@@ -1370,7 +1370,7 @@ function hideGate() {
 
 async function checkGate() {
   const input = document.getElementById('gateInput').value;
-  const hash = await sha1(input);
+  const  = await sha1(input);
   if (hash === GATE_HASH) {
     localStorage.setItem(GATE_KEY, '1');
     hideGate();
