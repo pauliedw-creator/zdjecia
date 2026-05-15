@@ -471,6 +471,7 @@
         <option value="Norwegia">Norwegia</option>
         <option value="Włochy">Włochy</option>
         <option value="Hiszpania">Hiszpania</option>
+        <option value="Szwecja">Szwecja</option>
         <option value="Inne">Inne</option>
       </select>
     </div>
@@ -1198,7 +1199,7 @@ function buildEditForm(slabId) {
       <div class="field"><label>Krawędź</label>${sel('edge',[['cięty','Cięty'],['naturalny','Naturalny']], s.edge_condition)}</div>
     </div>
     <div class="field-row">
-      <div class="field"><label>Pochodzenie</label>${sel('origin',[['Indie','Indie'],['Chiny','Chiny'],['Brazylia','Brazylia'],['RPA','RPA'],['Norwegia','Norwegia'],['Włochy','Włochy'],['Hiszpania','Hiszpania'],['Inne','Inne']], s.origin_country)}</div>
+      <div class="field"><label>Pochodzenie</label>${sel('origin',[['Indie','Indie'],['Chiny','Chiny'],['Brazylia','Brazylia'],['RPA','RPA'],['Norwegia','Norwegia'],['Włochy','Włochy'],['Hiszpania','Hiszpania'],['Szwecja','Szwecja'],['Inne','Inne']], s.origin_country)}</div>
       <div class="field"><label>Status</label>${sel('status',[['dostępny','Dostępny'],['zarezerwowany','Zarezerwowany'],['sprzedany','Sprzedany']], (s.status||'').toLowerCase())}</div>
     </div>
     <div class="field"><label>Uwagi</label>
