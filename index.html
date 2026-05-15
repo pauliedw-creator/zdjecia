@@ -256,6 +256,29 @@
     .empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
     .empty-icon { font-size: 3rem; margin-bottom: 12px; }
 
+    /* ── password gate ── */
+    .gate {
+      position: fixed; inset: 0; background: var(--bg);
+      z-index: 999; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 32px 24px;
+    }
+    .gate__logo { height: 48px; margin-bottom: 24px; }
+    .gate__title { font-family: 'Cinzel', Georgia, serif; font-size: 1.1rem;
+      color: var(--gold); letter-spacing: 0.05em; text-align: center; margin-bottom: 6px; }
+    .gate__sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 32px; text-align: center; }
+    .gate__input {
+      width: 100%; max-width: 320px; padding: 14px 16px; font-size: 1.1rem;
+      border: 2px solid var(--border); border-radius: var(--r); text-align: center;
+      letter-spacing: 0.1em; margin-bottom: 12px; background: var(--bg-3);
+    }
+    .gate__input:focus { border-color: var(--gold); outline: none; }
+    .gate__btn {
+      width: 100%; max-width: 320px; padding: 14px; background: var(--gold);
+      color: #1a1a1a; font-weight: 700; font-size: 1rem; border-radius: var(--r);
+      border: none; cursor: pointer;
+    }
+    .gate__error { color: var(--red); font-size: 0.85rem; margin-top: 10px; display: none; }
+
     /* ── section divider ── */
     .section-title { font-size: 0.72rem; color: var(--text-faint); text-transform: uppercase;
       letter-spacing: 0.08em; font-weight: 600; margin: 24px 0 12px; }
@@ -527,7 +550,17 @@
     </div>
   </div>
 
-  <!-- Shared inputs for attach tab — document-level so modal click triggers work reliably -->
+  <!-- ═══ PASSWORD GATE ══════════════════════════════════════════════════ -->
+  <div class="gate" id="gate">
+    <img class="gate__logo" src="/assets/glg-logo-leaf-200.png" alt="GLG" />
+    <div class="gate__title">GOLDEN LEAF GRANIT</div>
+    <div class="gate__sub">Rejestracja płyt — dostęp chroniony</div>
+    <input class="gate__input" type="password" id="gateInput" placeholder="Hasło dostępu" autocomplete="off" />
+    <button class="gate__btn" id="gateBtn">Wejdź</button>
+    <div class="gate__error" id="gateError">Nieprawidłowe hasło</div>
+  </div>
+
+  <!-- Shared inputs for attach tab -->
   <input type="file" accept="image/*" capture="environment" id="attachCameraInput" style="display:none" />
   <input type="file" accept="image/jpeg,image/png,image/webp" multiple id="attachGalleryInput" style="display:none" />
 
@@ -671,7 +704,7 @@ function postNoCors(action, data) {
 async function callGet(action, params = {}) {
   let url = BACKEND_URL + '?action=' + action;
   for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== '') {
+    if (v !== undefined && v !== null) {
       url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(v);
     }
   }
@@ -1316,8 +1349,56 @@ function showToast(msg, type = '') {
   toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
 }
 
+// ── Password gate ─────────────────────────────────────────────────────────────
+const GATE_KEY = 'glg_auth';
+const GATE_HASH = '7c4a8d09ca3762af61e59520943dc26494f8941b'; // SHA1 of nDw27400
+
+async function sha1(str) {
+  const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function showGate() {
+  const gate = document.getElementById('gate');
+  gate.style.display = 'flex';
+  document.getElementById('gateInput').focus();
+}
+
+function hideGate() {
+  document.getElementById('gate').style.display = 'none';
+}
+
+async function checkGate() {
+  const input = document.getElementById('gateInput').value;
+  const hash = await sha1(input);
+  if (hash === GATE_HASH) {
+    localStorage.setItem(GATE_KEY, '1');
+    hideGate();
+    init();
+  } else {
+    const err = document.getElementById('gateError');
+    err.style.display = 'block';
+    document.getElementById('gateInput').value = '';
+    document.getElementById('gateInput').focus();
+    setTimeout(() => err.style.display = 'none', 3000);
+  }
+}
+
+document.getElementById('gateBtn').addEventListener('click', checkGate);
+document.getElementById('gateInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkGate();
+});
+
+// Check on load
+if (localStorage.getItem(GATE_KEY) === '1') {
+  hideGate();
+  init();
+} else {
+  showGate();
+}
+
 // ── Boot ─────────────────────────────────────────────────────────────────────
-init();
+// init() is called by the password gate check above
 </script>
 </body>
 </html>
