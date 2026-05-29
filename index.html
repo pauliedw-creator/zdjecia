@@ -452,13 +452,6 @@
           <option value="surowy">Surowy</option>
         </select>
       </div>
-      <div class="field">
-        <label>Krawędź</label>
-        <select id="edge">
-          <option value="cięty">Cięty</option>
-          <option value="naturalny">Naturalny</option>
-        </select>
-      </div>
     </div>
 
     <div class="field">
@@ -501,16 +494,6 @@
           <div class="shot-placeholder">
             <div class="shot-icon">🔍</div>
             <div class="shot-label">Detal</div>
-          </div>
-          <img class="preview" />
-          <button class="shot-remove" aria-label="Usuń">✕</button>
-          <input type="file" accept="image/*" capture="environment" class="input-camera" />
-          <input type="file" accept="image/jpeg,image/png,image/webp" class="input-gallery" />
-        </div>
-        <div class="shot-slot" id="slot-edge" data-type="edge">
-          <div class="shot-placeholder">
-            <div class="shot-icon">📐</div>
-            <div class="shot-label">Krawędź</div>
           </div>
           <img class="preview" />
           <button class="shot-remove" aria-label="Usuń">✕</button>
@@ -669,7 +652,6 @@ function applyPrefs() {
   const p = getPrefs();
   if (p.stoneType) document.getElementById('stoneType').value = p.stoneType;
   if (p.finish) document.getElementById('finish').value = p.finish;
-  if (p.edge) document.getElementById('edge').value = p.edge;
   if (p.origin) document.getElementById('origin').value = p.origin;
   if (p.thickness) document.getElementById('thickness').value = p.thickness;
 }
@@ -956,7 +938,6 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   savePrefs({
     stoneType: document.getElementById('stoneType').value,
     finish: document.getElementById('finish').value,
-    edge: document.getElementById('edge').value,
     origin: document.getElementById('origin').value,
     thickness: document.getElementById('thickness').value
   });
@@ -1197,7 +1178,6 @@ function buildEditForm(slabId) {
     </div>
     <div class="field-row">
       <div class="field"><label>Wykończenie</label>${sel('finish',[['polerowany','Polerowany'],['szczotkowany','Szczotkowany'],['płomieniowany','Płomieniowany'],['piaskowany','Piaskowany'],['surowy','Surowy']], s.finish)}</div>
-      <div class="field"><label>Krawędź</label>${sel('edge',[['cięty','Cięty'],['naturalny','Naturalny']], s.edge_condition)}</div>
     </div>
     <div class="field-row">
       <div class="field"><label>Pochodzenie</label>${sel('origin',[['Indie','Indie'],['Chiny','Chiny'],['Brazylia','Brazylia'],['RPA','RPA'],['Norwegia','Norwegia'],['Włochy','Włochy'],['Hiszpania','Hiszpania'],['Szwecja','Szwecja'],['Angola','Angola'],['Inne','Inne']], s.origin_country)}</div>
@@ -1231,7 +1211,6 @@ async function saveSlab(slabId) {
     width_cm:         document.getElementById(`ef-wid-${slabId}`)?.value,
     thickness_cm:     document.getElementById(`ef-thk-${slabId}`)?.value,
     finish:           document.getElementById(`ef-finish-${slabId}`)?.value,
-    edge_condition:   document.getElementById(`ef-edge-${slabId}`)?.value,
     origin_country:   document.getElementById(`ef-origin-${slabId}`)?.value,
     status:           document.getElementById(`ef-status-${slabId}`)?.value,
     notes_pl:         document.getElementById(`ef-notes_pl-${slabId}`)?.value.trim(),
@@ -1330,7 +1309,7 @@ async function handleAndUploadAttach(file, slabId) {
 
 function guessPhotoType(filename, existing) {
   const lower = filename.toLowerCase();
-  const types = ['full', 'detail', 'edge', 'wet'];
+  const types = ['full', 'detail', 'wet'];
   for (const t of types) {
     if (lower.includes(t) && !existing[t + '.jpg']) return t;
   }
